@@ -1,0 +1,22 @@
+# Dependencies
+node_modules
+dist
+coverage
+.git
+.env
+.env.*
+!.env.example
+
+# Dev / IDE
+.vscode
+.idea
+*.md
+terminals
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

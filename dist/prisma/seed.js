@@ -1,0 +1,117 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const client_1 = require("@prisma/client");
+const bcrypt = require("bcrypt");
+const prisma = new client_1.PrismaClient();
+const PERMISSIONS = [
+    { action: 'users.create', description: 'Create users' },
+    { action: 'users.read', description: 'Read users' },
+    { action: 'users.update', description: 'Update users' },
+    { action: 'users.delete', description: 'Delete users' },
+    { action: 'property.create', description: 'Create properties' },
+    { action: 'property.update', description: 'Update properties' },
+    { action: 'property.delete', description: 'Delete properties' },
+    { action: 'property.publish', description: 'Publish properties' },
+    { action: 'property.read', description: 'Read properties' },
+    { action: 'booking.create', description: 'Create bookings' },
+    { action: 'booking.cancel', description: 'Cancel bookings' },
+    { action: 'booking.read', description: 'Read bookings' },
+];
+const ROLE_PERMISSIONS = {
+    ADMIN: PERMISSIONS.map((p) => p.action),
+    OWNER: [
+        'property.create',
+        'property.update',
+        'property.delete',
+        'property.publish',
+        'property.read',
+        'booking.read',
+    ],
+    CUSTOMER: ['property.read', 'booking.create', 'booking.cancel', 'booking.read'],
+};
+async function seedAdmin() {
+    const seedAdmin = process.env.SEED_ADMIN === 'true';
+    if (!seedAdmin) {
+        return;
+    }
+    const email = process.env.ADMIN_EMAIL;
+    const password = process.env.ADMIN_PASSWORD;
+    if (!email || !password) {
+        throw new Error('SEED_ADMIN=true requires ADMIN_EMAIL and ADMIN_PASSWORD');
+    }
+    if (password.length < 12) {
+        throw new Error('ADMIN_PASSWORD must be at least 12 characters');
+    }
+    const adminRole = await prisma.role.findUniqueOrThrow({
+        where: { name: client_1.RoleName.ADMIN },
+    });
+    const hashedPassword = await bcrypt.hash(password, 12);
+    await prisma.user.upsert({
+        where: { email: email.toLowerCase() },
+        update: {
+            name: 'System Admin',
+            password: hashedPassword,
+            roleId: adminRole.id,
+            isVerified: true,
+            provider: client_1.AuthProvider.LOCAL,
+        },
+        create: {
+            name: 'System Admin',
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            roleId: adminRole.id,
+            isVerified: true,
+            provider: client_1.AuthProvider.LOCAL,
+        },
+    });
+    console.log(`Admin user seeded: ${email}`);
+}
+async function main() {
+    for (const perm of PERMISSIONS) {
+        await prisma.permission.upsert({
+            where: { action: perm.action },
+            update: { description: perm.description },
+            create: perm,
+        });
+    }
+    for (const roleName of Object.values(client_1.RoleName)) {
+        const role = await prisma.role.upsert({
+            where: { name: roleName },
+            update: {},
+            create: {
+                name: roleName,
+                description: `${roleName} role`,
+            },
+        });
+        const actions = ROLE_PERMISSIONS[roleName];
+        for (const action of actions) {
+            const permission = await prisma.permission.findUniqueOrThrow({
+                where: { action },
+            });
+            await prisma.rolePermission.upsert({
+                where: {
+                    roleId_permissionId: {
+                        roleId: role.id,
+                        permissionId: permission.id,
+                    },
+                },
+                update: {},
+                create: {
+                    roleId: role.id,
+                    permissionId: permission.id,
+                },
+            });
+        }
+    }
+    await seedAdmin();
+    console.log('Seed completed: roles, permissions, and role-permission mappings.');
+}
+main()
+    .catch((e) => {
+    console.error(e);
+    process.exit(1);
+})
+    .finally(async () => {
+    await prisma.$disconnect();
+});
+//# sourceMappingURL=seed.js.map

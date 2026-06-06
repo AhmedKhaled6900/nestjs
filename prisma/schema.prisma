@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  PHONE
+}
+
+enum OtpPurpose {
+  PHONE_AUTH
+  PASSWORD_RESET
+}
+
+enum RoleName {
+  ADMIN
+  OWNER
+  CUSTOMER
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  email        String?      @unique
+  phone        String?      @unique
+  password     String?
+  provider     AuthProvider @default(LOCAL)
+  providerId   String?
+  roleId       String
+  isVerified   Boolean      @default(false)
+  refreshToken String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([provider, providerId])
+  @@index([roleId])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        RoleName @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  action      String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Otp {
+  id        String     @id @default(uuid())
+  target    String
+  code      String
+  purpose   OtpPurpose
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime   @default(now())
+
+  @@index([target, purpose])
+  @@map("otps")
+}
