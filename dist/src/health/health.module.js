@@ -19,10 +19,17 @@ let HealthController = class HealthController {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async check() {
+    check() {
+        return {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+        };
+    }
+    async ready() {
         await this.prisma.$queryRaw `SELECT 1`;
         return {
             status: 'ok',
+            db: 'connected',
             timestamp: new Date().toISOString(),
         };
     }
@@ -33,8 +40,15 @@ __decorate([
     (0, common_2.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], HealthController.prototype, "check", null);
+__decorate([
+    (0, permissions_decorator_1.Public)(),
+    (0, common_2.Get)('ready'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], HealthController.prototype, "ready", null);
 exports.HealthController = HealthController = __decorate([
     (0, swagger_1.ApiTags)('Health'),
     (0, common_2.Controller)('health'),

@@ -4,9 +4,9 @@
   "description": "Rental Property Platform - Auth + RBAC",
   "scripts": {
     "build": "nest build",
-    "start": "nest start",
+"start": "node dist/src/main.js",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/src/main.js",
+   "start:prod": "node dist/src/main.js",
     "start:railway": "npx prisma migrate deploy && node dist/src/main.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

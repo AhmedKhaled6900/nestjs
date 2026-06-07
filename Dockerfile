@@ -1,6 +1,8 @@
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm ci
@@ -11,13 +13,13 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS production
+FROM node:22-slim AS production
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN apk add --no-cache dumb-init wget
+RUN apt-get update && apt-get install -y openssl wget dumb-init && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -32,10 +34,8 @@ RUN chmod +x /entrypoint.sh
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/health || exit 1
-
-USER node
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:${PORT:-3000}/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--", "/entrypoint.sh"]
 CMD ["node", "dist/src/main.js"]

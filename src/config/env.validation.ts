@@ -83,10 +83,15 @@ export function validate(config: Record<string, unknown>) {
   const nodeEnv = (config.NODE_ENV as string) ?? 'development';
   const isProduction = nodeEnv === 'production';
 
+  const railwayDomain = config.RAILWAY_PUBLIC_DOMAIN as string | undefined;
+  const defaultAppUrl = railwayDomain
+    ? `https://${railwayDomain}`
+    : 'http://localhost:3000';
+
   const normalized = {
     ...config,
     NODE_ENV: nodeEnv,
-    APP_URL: config.APP_URL ?? 'http://localhost:3000',
+    APP_URL: config.APP_URL ?? defaultAppUrl,
     JWT_ACCESS_SECRET:
       config.JWT_ACCESS_SECRET ?? 'dev-access-secret-min-32-chars-long!!',
     JWT_REFRESH_SECRET:
