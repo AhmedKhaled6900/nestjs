@@ -1,4 +1,3 @@
-# CreateEnum
 CREATE TYPE "AuthProvider" AS ENUM ('LOCAL', 'GOOGLE', 'PHONE');
 
 -- CreateEnum
