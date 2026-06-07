@@ -11,6 +11,17 @@ import { TokenService } from './services/token.service';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
+function isGoogleOAuthConfigured(): boolean {
+  return Boolean(
+    process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_CALLBACK_URL &&
+      process.env.GOOGLE_CLIENT_ID !== 'your-google-client-id',
+  );
+}
+
+const googleProviders = isGoogleOAuthConfigured() ? [GoogleStrategy] : [];
+
 @Module({
   imports: [PassportModule.register({ defaultStrategy: 'jwt' }), JwtModule.register({})],
   controllers: [AuthController],
@@ -20,7 +31,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PasswordService,
     OtpService,
     JwtStrategy,
-    GoogleStrategy,
+    ...googleProviders,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

@@ -19,6 +19,13 @@ const password_service_1 = require("./services/password.service");
 const token_service_1 = require("./services/token.service");
 const google_strategy_1 = require("./strategies/google.strategy");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
+function isGoogleOAuthConfigured() {
+    return Boolean(process.env.GOOGLE_CLIENT_ID &&
+        process.env.GOOGLE_CLIENT_SECRET &&
+        process.env.GOOGLE_CALLBACK_URL &&
+        process.env.GOOGLE_CLIENT_ID !== 'your-google-client-id');
+}
+const googleProviders = isGoogleOAuthConfigured() ? [google_strategy_1.GoogleStrategy] : [];
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -32,7 +39,7 @@ exports.AuthModule = AuthModule = __decorate([
             password_service_1.PasswordService,
             otp_service_1.OtpService,
             jwt_strategy_1.JwtStrategy,
-            google_strategy_1.GoogleStrategy,
+            ...googleProviders,
             { provide: core_1.APP_GUARD, useClass: auth_guards_1.JwtAuthGuard },
             { provide: core_1.APP_GUARD, useClass: auth_guards_1.PermissionsGuard },
             { provide: core_1.APP_GUARD, useClass: auth_guards_1.RolesGuard },

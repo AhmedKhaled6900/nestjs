@@ -62,10 +62,13 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
 
   console.log(`Environment: ${configService.get('NODE_ENV', 'development')}`);
-  console.log(`Server:      http://localhost:${port}`);
+  console.log(`Server:      listening on 0.0.0.0:${port}`);
   if (swaggerEnabled) {
-    console.log(`Swagger:     http://localhost:${port}/api/docs`);
+    console.log(`Swagger:     /api/docs`);
   }
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('Failed to start application:', error);
+  process.exit(1);
+});
