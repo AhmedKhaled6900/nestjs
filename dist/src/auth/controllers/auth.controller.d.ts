@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
-import { ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto, VerifyResetOtpDto } from '../dto/auth.dto';
+import { ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResendVerificationDto, ResetPasswordDto, VerifyEmailDto, VerifyResetOtpDto } from '../dto/auth.dto';
 import { SendPhoneOtpDto, VerifyPhoneOtpDto } from '../dto/phone-auth.dto';
 import { AuthService } from '../services/auth.service';
 import { GoogleProfile } from '../strategies/google.strategy';
@@ -8,8 +8,12 @@ export declare class AuthController {
     private readonly authService;
     private readonly configService;
     constructor(authService: AuthService, configService: ConfigService);
-    register(dto: RegisterDto): Promise<import("../interfaces/auth.interface").AuthResponse>;
+    register(dto: RegisterDto): Promise<import("../interfaces/auth.interface").RegisterPendingResponse>;
     login(dto: LoginDto): Promise<import("../interfaces/auth.interface").AuthResponse>;
+    verifyEmail(dto: VerifyEmailDto): Promise<import("../interfaces/auth.interface").AuthResponse>;
+    resendVerification(dto: ResendVerificationDto): Promise<{
+        message: string;
+    }>;
     sendPhoneOtp(dto: SendPhoneOtpDto): Promise<{
         message: string;
     }>;

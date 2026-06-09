@@ -16,12 +16,26 @@ enum AuthProvider {
 enum OtpPurpose {
   PHONE_AUTH
   PASSWORD_RESET
+  EMAIL_VERIFICATION
 }
 
 enum RoleName {
   ADMIN
   OWNER
   CUSTOMER
+}
+
+enum OwnerType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum ProfileStatus {
+  INCOMPLETE
+  BASIC_DONE
+  KYC_PENDING
+  VERIFIED
+  REJECTED
 }
 
 model User {
@@ -38,7 +52,9 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  role Role @relation(fields: [roleId], references: [id])
+  role         Role          @relation(fields: [roleId], references: [id])
+  ownerProfile OwnerProfile?
+  properties   Property[]
 
   @@unique([provider, providerId])
   @@index([roleId])
@@ -90,4 +106,117 @@ model Otp {
 
   @@index([target, purpose])
   @@map("otps")
+}
+
+model OwnerProfile {
+  id                 String         @id @default(uuid())
+  userId             String         @unique
+  ownerType          OwnerType?
+  companyName        String?
+  taxNumber          String?
+  commercialRegister String?
+  nationalId         String?
+  whatsapp           String?
+  phone              String?
+  email              String?
+  address            String?
+  city               String?
+  area               String?
+  bio                String?
+  profileStatus      ProfileStatus  @default(INCOMPLETE)
+  rejectionReason    String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([profileStatus])
+  @@map("owner_profiles")
+}
+
+enum PropertyPurpose {
+  SALE
+  RENT
+}
+
+enum PropertyStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  SOLD
+  RENTED
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  parentId    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent     Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children   Category[] @relation("CategoryTree")
+  properties Property[]
+
+  @@index([parentId])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model Property {
+  id              String          @id @default(uuid())
+  title           String
+  description     String          @db.Text
+  price           Decimal         @db.Decimal(14, 2)
+  city            String
+  area            String
+  address         String
+  latitude        Decimal?        @db.Decimal(10, 7)
+  longitude       Decimal?        @db.Decimal(10, 7)
+  bedrooms        Int?
+  bathrooms       Int?
+  areaSize        Decimal?        @db.Decimal(10, 2)
+  purpose         PropertyPurpose
+  status          PropertyStatus  @default(DRAFT)
+  categoryId      String
+  ownerId         String
+  rejectionReason String?
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  category Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  owner    User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  images   PropertyImage[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([purpose])
+  @@index([city])
+  @@index([status, purpose])
+  @@index([status, categoryId, purpose])
+  @@index([ownerId, status])
+  @@map("properties")
+}
+
+model PropertyImage {
+  id         String   @id @default(uuid())
+  propertyId String
+  imageUrl   String
+  isPrimary  Boolean  @default(false)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, order])
+  @@index([propertyId, isPrimary])
+  @@map("property_images")
 }

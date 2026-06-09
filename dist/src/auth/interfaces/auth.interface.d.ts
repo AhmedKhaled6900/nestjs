@@ -17,12 +17,21 @@ export interface TokenPair {
     accessToken: string;
     refreshToken: string;
 }
+export interface AuthUserResponse {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    role: string;
+    isVerified: boolean;
+    isProfileComplete?: boolean;
+    profileStatus?: string | null;
+    ownerType?: string | null;
+}
 export interface AuthResponse extends TokenPair {
-    user: {
-        id: string;
-        name: string;
-        email: string | null;
-        phone: string | null;
-        role: string;
-    };
+    user: AuthUserResponse;
+}
+export interface RegisterPendingResponse {
+    message: string;
+    user: AuthUserResponse;
 }

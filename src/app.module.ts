@@ -6,6 +6,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { PropertyModule } from './property/property.module';
 import { HealthModule } from './health/health.module';
+import { OwnerModule } from './owner/owner.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { HealthModule } from './health/health.module';
     PrismaModule,
     AuthModule,
     PropertyModule,
+    OwnerModule,
+    CategoryModule,
     HealthModule,
   ],
 })

@@ -1,6 +1,6 @@
 import { PrismaClient, RoleName, AuthProvider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-
+import { CATEGORY_SEED } from './category.seed-data';
 const prisma = new PrismaClient();
 
 const PERMISSIONS = [
@@ -11,11 +11,15 @@ const PERMISSIONS = [
   { action: 'property.create', description: 'Create properties' },
   { action: 'property.update', description: 'Update properties' },
   { action: 'property.delete', description: 'Delete properties' },
-  { action: 'property.publish', description: 'Publish properties' },
+  { action: 'property.publish', description: 'Submit properties for review' },
   { action: 'property.read', description: 'Read properties' },
+  { action: 'property.review', description: 'Review property submissions' },
   { action: 'booking.create', description: 'Create bookings' },
   { action: 'booking.cancel', description: 'Cancel bookings' },
   { action: 'booking.read', description: 'Read bookings' },
+  { action: 'owner.profile.read', description: 'Read own owner profile' },
+  { action: 'owner.profile.update', description: 'Update own owner profile' },
+  { action: 'owner.review', description: 'Review owner KYC submissions' },
 ];
 
 const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
@@ -27,6 +31,8 @@ const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     'property.publish',
     'property.read',
     'booking.read',
+    'owner.profile.read',
+    'owner.profile.update',
   ],
   CUSTOMER: ['property.read', 'booking.create', 'booking.cancel', 'booking.read'],
 };
@@ -76,6 +82,49 @@ async function seedAdmin() {
   console.log(`Admin user seeded: ${email}`);
 }
 
+async function seedCategories() {
+  for (const main of CATEGORY_SEED) {
+    const parent = await prisma.category.upsert({
+      where: { slug: main.slug },
+      update: {
+        name: main.name,
+        description: main.description,
+        sortOrder: main.sortOrder,
+        isActive: true,
+        parentId: null,
+      },
+      create: {
+        name: main.name,
+        slug: main.slug,
+        description: main.description,
+        sortOrder: main.sortOrder,
+        isActive: true,
+      },
+    });
+
+    for (const child of main.children) {
+      await prisma.category.upsert({
+        where: { slug: child.slug },
+        update: {
+          name: child.name,
+          sortOrder: child.sortOrder,
+          isActive: true,
+          parentId: parent.id,
+        },
+        create: {
+          name: child.name,
+          slug: child.slug,
+          sortOrder: child.sortOrder,
+          isActive: true,
+          parentId: parent.id,
+        },
+      });
+    }
+  }
+
+  console.log('Categories seeded: main categories and subcategories.');
+}
+
 async function main() {
   for (const perm of PERMISSIONS) {
     await prisma.permission.upsert({
@@ -116,9 +165,10 @@ async function main() {
     }
   }
 
+  await seedCategories();
   await seedAdmin();
 
-  console.log('Seed completed: roles, permissions, and role-permission mappings.');
+  console.log('Seed completed: roles, permissions, categories, and role-permission mappings.');
 }
 
 main()

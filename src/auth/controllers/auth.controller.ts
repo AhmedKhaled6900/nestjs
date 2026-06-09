@@ -21,10 +21,16 @@ import {
   LoginDto,
   RefreshTokenDto,
   RegisterDto,
+  ResendVerificationDto,
   ResetPasswordDto,
+  VerifyEmailDto,
   VerifyResetOtpDto,
 } from '../dto/auth.dto';
-import { AuthResponseDto, MessageResponseDto } from '../dto/auth-response.dto';
+import {
+  AuthResponseDto,
+  MessageResponseDto,
+  RegisterPendingResponseDto,
+} from '../dto/auth-response.dto';
 import { SendPhoneOtpDto, VerifyPhoneOtpDto } from '../dto/phone-auth.dto';
 import { Public } from '../decorators/permissions.decorator';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
@@ -41,8 +47,11 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @ApiOperation({ summary: 'Register with email & password' })
-  @ApiResponse({ status: 201, type: AuthResponseDto })
+  @ApiOperation({
+    summary: 'Register with email, phone & password',
+    description: 'Does not return tokens. Sends verification email. Use POST /auth/verify-email to activate.',
+  })
+  @ApiResponse({ status: 201, type: RegisterPendingResponseDto })
   @ApiResponse({ status: 409, description: 'Email already registered' })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -53,8 +62,27 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with email & password' })
   @ApiResponse({ status: 200, type: AuthResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiResponse({ status: 403, description: 'Email not verified — verification email resent' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify email with OTP code', description: 'Returns JWT tokens after successful verification' })
+  @ApiResponse({ status: 200, type: AuthResponseDto })
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto);
+  }
+
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend email verification code' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto);
   }
 
   @Public()

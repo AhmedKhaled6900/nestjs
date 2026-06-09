@@ -1,7 +1,8 @@
 import { PrismaService } from '../../prisma/prisma.service';
-import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, VerifyResetOtpDto } from '../dto/auth.dto';
+import { ForgotPasswordDto, LoginDto, RegisterDto, ResendVerificationDto, ResetPasswordDto, VerifyEmailDto, VerifyResetOtpDto } from '../dto/auth.dto';
 import { VerifyPhoneOtpDto } from '../dto/phone-auth.dto';
-import { AuthResponse } from '../interfaces/auth.interface';
+import { EmailService } from '../email/email.service';
+import { AuthResponse, RegisterPendingResponse } from '../interfaces/auth.interface';
 import { OtpService } from '../otp/otp.service';
 import { PasswordService } from '../services/password.service';
 import { TokenService } from '../services/token.service';
@@ -10,9 +11,14 @@ export declare class AuthService {
     private readonly passwordService;
     private readonly tokenService;
     private readonly otpService;
-    constructor(prisma: PrismaService, passwordService: PasswordService, tokenService: TokenService, otpService: OtpService);
-    register(dto: RegisterDto): Promise<AuthResponse>;
+    private readonly emailService;
+    constructor(prisma: PrismaService, passwordService: PasswordService, tokenService: TokenService, otpService: OtpService, emailService: EmailService);
+    register(dto: RegisterDto): Promise<RegisterPendingResponse>;
     login(dto: LoginDto): Promise<AuthResponse>;
+    verifyEmail(dto: VerifyEmailDto): Promise<AuthResponse>;
+    resendVerification(dto: ResendVerificationDto): Promise<{
+        message: string;
+    }>;
     sendPhoneOtp(phone: string): Promise<{
         message: string;
     }>;
@@ -32,7 +38,9 @@ export declare class AuthService {
         message: string;
     }>;
     refreshToken(refreshToken: string): Promise<AuthResponse>;
+    private sendVerificationEmail;
     private buildAuthResponse;
+    private mapUserResponse;
     private resolveTarget;
     private findUserByTarget;
     private findUserByTargetOrFail;

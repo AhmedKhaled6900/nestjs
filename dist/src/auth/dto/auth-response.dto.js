@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MessageResponseDto = exports.AuthResponseDto = exports.UserResponseDto = void 0;
+exports.MessageResponseDto = exports.RegisterPendingResponseDto = exports.AuthResponseDto = exports.UserResponseDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
 class UserResponseDto {
@@ -35,6 +35,25 @@ __decorate([
     (0, swagger_1.ApiProperty)({ enum: client_1.RoleName, example: 'CUSTOMER' }),
     __metadata("design:type", String)
 ], UserResponseDto.prototype, "role", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: false, description: 'Whether email has been verified' }),
+    __metadata("design:type", Boolean)
+], UserResponseDto.prototype, "isVerified", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'True if owner submitted extended profile (not INCOMPLETE)',
+        example: false,
+    }),
+    __metadata("design:type", Boolean)
+], UserResponseDto.prototype, "isProfileComplete", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: client_1.ProfileStatus, example: 'INCOMPLETE' }),
+    __metadata("design:type", Object)
+], UserResponseDto.prototype, "profileStatus", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: null, description: 'Set after profile completion' }),
+    __metadata("design:type", Object)
+], UserResponseDto.prototype, "ownerType", void 0);
 class AuthResponseDto {
 }
 exports.AuthResponseDto = AuthResponseDto;
@@ -50,6 +69,17 @@ __decorate([
     (0, swagger_1.ApiProperty)({ type: UserResponseDto }),
     __metadata("design:type", UserResponseDto)
 ], AuthResponseDto.prototype, "user", void 0);
+class RegisterPendingResponseDto {
+}
+exports.RegisterPendingResponseDto = RegisterPendingResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Registration successful. Please verify your email.' }),
+    __metadata("design:type", String)
+], RegisterPendingResponseDto.prototype, "message", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: UserResponseDto }),
+    __metadata("design:type", UserResponseDto)
+], RegisterPendingResponseDto.prototype, "user", void 0);
 class MessageResponseDto {
 }
 exports.MessageResponseDto = MessageResponseDto;

@@ -15,7 +15,8 @@ Built with **NestJS**, **PostgreSQL**, **Prisma**, **JWT**, **Phone OTP**, and *
 - [Project Structure](#project-structure)
 - [Database Schema](#database-schema)
 - [RBAC & Permissions](#rbac--permissions)
-- [API Endpoints](#api-endpoints)
+- [Owner Profile & KYC](#owner-profile--kyc)
+- [API Reference (Full)](#api-reference-full)
 - [Swagger Documentation](#swagger-documentation)
 - [Environment Variables](#environment-variables)
 - [Local Development](#local-development)
@@ -40,6 +41,7 @@ This API provides:
 - Password reset via OTP (email or phone)
 - JWT access + refresh tokens
 - Permission-based access control (RBAC)
+- **Owner KYC profile** — individual or company, admin approve/reject
 - Example protected routes for Properties & Bookings
 
 **User roles:**
@@ -105,6 +107,10 @@ This API provides:
 - No Broker role
 - Users **cannot self-register as ADMIN** via API
 - Admin is created via seed or manually
+- **Register** requires: `name`, `email`, `phone`, `password`, `role` (`CUSTOMER` or `OWNER`)
+- **Owner** registers with basic data → `profileStatus: INCOMPLETE`
+- Owner completes extended profile → `KYC_PENDING` → Admin approves (`VERIFIED`) or rejects (`REJECTED`)
+- Owner type (`INDIVIDUAL` / `COMPANY`) is chosen only when completing the profile
 
 ---
 
@@ -146,6 +152,11 @@ aqar/
 │   │       └── current-user.decorator.ts
 │   ├── property/
 │   │   └── property.controller.ts   # Example RBAC routes
+│   ├── owner/
+│   │   ├── owner.module.ts
+│   │   ├── owner-profile.controller.ts
+│   │   ├── owner-profile.service.ts
+│   │   └── dto/
 │   └── health/
 │       └── health.module.ts         # GET /health
 ├── docker/
@@ -170,6 +181,7 @@ aqar/
 | `Permission` | Action strings e.g. `property.create` |
 | `RolePermission` | Many-to-many role ↔ permission |
 | `Otp` | OTP codes with expiry & single-use flag |
+| `OwnerProfile` | Owner KYC data (individual or company) |
 
 ### User Fields
 
@@ -178,12 +190,23 @@ id, name, email?, phone?, password?, provider, providerId?,
 roleId, isVerified, refreshToken?, createdAt, updatedAt
 ```
 
+### OwnerProfile Fields
+
+```
+id, userId, ownerType?, companyName?,
+taxNumber? (image URL), commercialRegister? (image URL), nationalId? (image URL),
+whatsapp?, phone?, email?, address?, city?, area?, bio?,
+profileStatus, rejectionReason?, createdAt, updatedAt
+```
+
 ### Enums
 
 ```
-AuthProvider: LOCAL | GOOGLE | PHONE
-OtpPurpose:   PHONE_AUTH | PASSWORD_RESET
-RoleName:     ADMIN | OWNER | CUSTOMER
+AuthProvider:  LOCAL | GOOGLE | PHONE
+OtpPurpose:    PHONE_AUTH | PASSWORD_RESET
+RoleName:      ADMIN | OWNER | CUSTOMER
+OwnerType:     INDIVIDUAL | COMPANY
+ProfileStatus: INCOMPLETE | BASIC_DONE | KYC_PENDING | VERIFIED | REJECTED
 ```
 
 ---
@@ -206,6 +229,9 @@ RoleName:     ADMIN | OWNER | CUSTOMER
 | `booking.create` | Create bookings |
 | `booking.cancel` | Cancel bookings |
 | `booking.read` | Read bookings |
+| `owner.profile.read` | Read own owner profile |
+| `owner.profile.update` | Complete/update own owner profile |
+| `owner.review` | Admin: approve/reject owner KYC |
 
 ### Role → Permissions Matrix
 
@@ -216,6 +242,8 @@ RoleName:     ADMIN | OWNER | CUSTOMER
 | property.read | ✅ | ✅ | ✅ |
 | booking.create/cancel | ✅ | ❌ | ✅ |
 | booking.read | ✅ | ✅ | ✅ |
+| owner.profile.read/update | ✅ | ✅ | ❌ |
+| owner.review | ✅ | ❌ | ❌ |
 
 ### Decorators
 
@@ -228,49 +256,658 @@ RoleName:     ADMIN | OWNER | CUSTOMER
 
 ---
 
-## API Endpoints
+## Owner Profile & KYC
 
-Base URL: `http://localhost:3000` (dev) or `https://your-app.up.railway.app` (production)
+### Registration flow
 
-### Auth — Public
+```
+1. POST /auth/register  (role: OWNER)
+   → User created + OwnerProfile (profileStatus: INCOMPLETE)
+   → Response includes: isProfileComplete: false
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/register` | Register with email & password |
-| POST | `/auth/login` | Login with email & password |
-| POST | `/auth/phone/send-otp` | Send OTP to phone (rate limited) |
-| POST | `/auth/phone/verify` | Verify OTP → register or login |
-| GET | `/auth/google` | Start Google OAuth |
-| GET | `/auth/google/callback` | Google OAuth callback |
-| POST | `/auth/forgot-password` | Send reset OTP (email or phone) |
-| POST | `/auth/verify-reset-otp` | Verify reset OTP |
-| POST | `/auth/reset-password` | Set new password |
-| POST | `/auth/refresh-token` | Refresh JWT tokens |
+2. POST /owner/profile/complete  (ownerType: INDIVIDUAL | COMPANY)
+   → profileStatus: KYC_PENDING
 
-### Health
+3. Admin reviews:
+   PATCH /admin/owners/:userId/approve  → VERIFIED
+   PATCH /admin/owners/:userId/reject   → REJECTED (+ reason)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check (DB connectivity) |
+4. If REJECTED → owner can resubmit POST /owner/profile/complete
+```
 
-### Properties — Protected (Bearer JWT)
+### Profile status meanings
 
-| Method | Endpoint | Permission |
-|--------|----------|------------|
-| GET | `/properties` | `property.read` |
-| POST | `/properties` | `property.create` |
-| PATCH | `/properties/:id` | `property.update` |
-| POST | `/properties/:id/publish` | `property.publish` |
-| DELETE | `/properties/:id` | `property.delete` |
-| GET | `/properties/admin/all` | ADMIN + `property.read` |
+| Status | Meaning |
+|--------|---------|
+| `INCOMPLETE` | Owner registered but did not submit extended profile |
+| `BASIC_DONE` | Reserved for future use |
+| `KYC_PENDING` | Profile submitted, waiting for admin review |
+| `VERIFIED` | Admin approved — owner can operate fully |
+| `REJECTED` | Admin rejected — owner must fix and resubmit |
 
-### Bookings — Protected (Bearer JWT)
+### Owner type fields
 
-| Method | Endpoint | Permission |
-|--------|----------|------------|
-| POST | `/bookings` | `booking.create` |
-| GET | `/bookings/my` | `booking.read` |
-| PATCH | `/bookings/:id/cancel` | `booking.cancel` |
+| Field | INDIVIDUAL | COMPANY |
+|-------|:----------:|:-------:|
+| `nationalId` | **Required** (image file) | — |
+| `companyName` | — | **Required** (text) |
+| `taxNumber` | — | **Required** (image file) |
+| `commercialRegister` | — | **Required** (image file) |
+| `whatsapp`, `phone`, `email`, `address`, `city`, `area`, `bio` | Optional | Optional |
+
+> Stored document fields return **full image URLs** (e.g. `http://localhost:3000/uploads/kyc/...`).  
+> Use them directly in `<img src="..." />` on the frontend. Legacy text values are returned as `null`.
+
+---
+
+## API Reference (Full)
+
+**Base URL:** `http://localhost:3000` (dev) · `https://your-app.up.railway.app` (production)
+
+**Auth header for protected routes:**
+```
+Authorization: Bearer <accessToken>
+```
+
+---
+
+### POST `/auth/register` — Public
+
+Register a new user (Customer or Owner).
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | ✅ | Full name |
+| `email` | string | ✅ | Valid email (unique) |
+| `phone` | string | ✅ | Phone number (unique), e.g. `+201234567890` |
+| `password` | string | ✅ | Min 8 characters |
+| `role` | enum | ✅ | `CUSTOMER` or `OWNER` only |
+
+```json
+{
+  "name": "Ahmed Ali",
+  "email": "owner@example.com",
+  "phone": "+201234567890",
+  "password": "password123",
+  "role": "OWNER"
+}
+```
+
+**Response `201`:**
+
+```json
+{
+  "accessToken": "eyJhbG...",
+  "refreshToken": "eyJhbG...",
+  "user": {
+    "id": "uuid",
+    "name": "Ahmed Ali",
+    "email": "owner@example.com",
+    "phone": "+201234567890",
+    "role": "OWNER",
+    "isProfileComplete": false,
+    "profileStatus": "INCOMPLETE",
+    "ownerType": null
+  }
+}
+```
+
+> For `CUSTOMER`, owner fields (`isProfileComplete`, `profileStatus`, `ownerType`) are **not** included.
+
+**Errors:**
+
+| Status | Reason |
+|--------|--------|
+| `409` | Email or phone already registered |
+| `400` | `role: ADMIN` not allowed |
+
+---
+
+### POST `/auth/login` — Public
+
+**Request body:**
+
+| Field | Type | Required |
+|-------|------|:--------:|
+| `email` | string | ✅ |
+| `password` | string | ✅ |
+
+```json
+{
+  "email": "owner@example.com",
+  "password": "password123"
+}
+```
+
+**Response `200`:** Same shape as register (includes owner flags if role is `OWNER`).
+
+**Errors:** `401` Invalid credentials
+
+---
+
+### POST `/auth/phone/send-otp` — Public (rate limited)
+
+**Request body:**
+
+```json
+{ "phone": "+201234567890" }
+```
+
+**Response `200`:**
+
+```json
+{ "message": "OTP sent successfully" }
+```
+
+> In development, OTP is printed in server console.
+
+---
+
+### POST `/auth/phone/verify` — Public
+
+**Request body:**
+
+| Field | Type | Required |
+|-------|------|:--------:|
+| `phone` | string | ✅ |
+| `code` | string | ✅ |
+| `name` | string | ✅ (for new users) |
+
+```json
+{
+  "phone": "+201234567890",
+  "code": "482913",
+  "name": "Ahmed Ali"
+}
+```
+
+**Response `200`:** Auth response (always registers as `CUSTOMER`).
+
+---
+
+### GET `/auth/google` — Public
+
+Redirects browser to Google OAuth consent screen. No request body.
+
+---
+
+### GET `/auth/google/callback` — Public
+
+Google callback. Redirects to:
+
+```
+{APP_URL}/auth/callback?accessToken=...&refreshToken=...
+```
+
+---
+
+### POST `/auth/forgot-password` — Public (rate limited)
+
+**Request body** (one of):
+
+```json
+{ "email": "user@example.com" }
+```
+```json
+{ "phone": "+201234567890" }
+```
+
+**Response `200`:**
+
+```json
+{ "message": "If the account exists, an OTP has been sent" }
+```
+
+---
+
+### POST `/auth/verify-reset-otp` — Public
+
+**Request body:**
+
+```json
+{
+  "email": "user@example.com",
+  "code": "123456"
+}
+```
+
+**Response `200`:**
+
+```json
+{ "message": "OTP verified successfully" }
+```
+
+---
+
+### POST `/auth/reset-password` — Public
+
+**Request body:**
+
+```json
+{
+  "email": "user@example.com",
+  "code": "123456",
+  "newPassword": "newPassword123"
+}
+```
+
+**Response `200`:**
+
+```json
+{ "message": "Password reset successfully" }
+```
+
+> Invalidates all refresh tokens for the user.
+
+---
+
+### POST `/auth/refresh-token` — Public
+
+**Request body:**
+
+```json
+{ "refreshToken": "eyJhbG..." }
+```
+
+**Response `200`:** Full auth response with new tokens.
+
+---
+
+### GET `/health` — Public
+
+**Response `200`:**
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-06-07T12:00:00.000Z"
+}
+```
+
+---
+
+### GET `/health/ready` — Public
+
+**Response `200`:**
+
+```json
+{
+  "status": "ok",
+  "db": "connected",
+  "timestamp": "2026-06-07T12:00:00.000Z"
+}
+```
+
+---
+
+### GET `/owner/profile` — Protected (OWNER)
+
+**Permission:** `owner.profile.read`
+
+**Response `200`:**
+
+```json
+{
+  "id": "profile-uuid",
+  "userId": "user-uuid",
+  "ownerType": "INDIVIDUAL",
+  "companyName": null,
+  "taxNumber": null,
+  "commercialRegister": null,
+  "nationalId": "http://localhost:3000/uploads/kyc/user-uuid/nationalId-abc.jpeg",
+  "whatsapp": "+201098765432",
+  "phone": "+201234567890",
+  "email": "owner@example.com",
+  "address": "123 Main St",
+  "city": "Cairo",
+  "area": "Nasr City",
+  "bio": "Experienced owner",
+  "profileStatus": "KYC_PENDING",
+  "rejectionReason": null,
+  "isProfileComplete": true,
+  "isVerified": true,
+  "createdAt": "2026-06-07T12:00:00.000Z",
+  "updatedAt": "2026-06-07T12:30:00.000Z"
+}
+```
+
+---
+
+### POST `/owner/profile/complete` — Protected (OWNER)
+
+**Permission:** `owner.profile.update`
+
+Submit or resubmit extended owner profile. Sets `profileStatus` → `KYC_PENDING`.
+
+**Content-Type:** `multipart/form-data`
+
+**Request — INDIVIDUAL:**
+
+| Field | Type | Required |
+|-------|------|:--------:|
+| `ownerType` | `INDIVIDUAL` | ✅ |
+| `nationalId` | image file (JPEG/PNG/WebP, max 5 MB) | ✅ |
+| `whatsapp`, `phone`, `email`, `address`, `city`, `area`, `bio` | text | Optional |
+
+```bash
+curl -X POST http://localhost:3000/owner/profile/complete \
+  -H "Authorization: Bearer <accessToken>" \
+  -F "ownerType=INDIVIDUAL" \
+  -F "nationalId=@/path/to/national-id.jpg" \
+  -F "whatsapp=+201098765432" \
+  -F "city=Cairo"
+```
+
+**Request — COMPANY:**
+
+| Field | Type | Required |
+|-------|------|:--------:|
+| `ownerType` | `COMPANY` | ✅ |
+| `companyName` | text | ✅ |
+| `taxNumber` | image file (JPEG/PNG/WebP, max 5 MB) | ✅ |
+| `commercialRegister` | image file (JPEG/PNG/WebP, max 5 MB) | ✅ |
+| `whatsapp`, `phone`, `email`, `address`, `city`, `area`, `bio` | text | Optional |
+
+```bash
+curl -X POST http://localhost:3000/owner/profile/complete \
+  -H "Authorization: Bearer <accessToken>" \
+  -F "ownerType=COMPANY" \
+  -F "companyName=شركة العقارات المتميزة" \
+  -F "taxNumber=@/path/to/tax-card.jpg" \
+  -F "commercialRegister=@/path/to/cr-document.jpg" \
+  -F "city=Cairo"
+```
+
+**Response `200`:**
+
+```json
+{
+  "message": "Profile submitted for admin review",
+  "profile": {
+    "id": "profile-uuid",
+    "userId": "user-uuid",
+    "ownerType": "COMPANY",
+    "companyName": "شركة العقارات المتميزة",
+    "taxNumber": "http://localhost:3000/uploads/kyc/user-uuid/taxNumber-abc.jpeg",
+    "commercialRegister": "http://localhost:3000/uploads/kyc/user-uuid/commercialRegister-abc.jpeg",
+    "nationalId": null,
+    "profileStatus": "KYC_PENDING",
+    "isProfileComplete": true,
+    "...": "..."
+  }
+}
+```
+
+**Errors:**
+
+| Status | Reason |
+|--------|--------|
+| `400` | Missing required document image (first submit) |
+| `400` | Already `VERIFIED` |
+| `403` | Not an owner |
+
+---
+
+### GET `/admin/owners/pending` — Protected (ADMIN)
+
+**Permission:** `owner.review`
+
+**Response `200`:**
+
+```json
+[
+  {
+    "id": "profile-uuid",
+    "userId": "user-uuid",
+    "ownerType": "COMPANY",
+    "companyName": "شركة العقارات",
+    "profileStatus": "KYC_PENDING",
+    "isProfileComplete": true,
+    "user": {
+      "id": "user-uuid",
+      "name": "Ahmed Ali",
+      "email": "owner@example.com",
+      "phone": "+201234567890",
+      "createdAt": "2026-06-07T12:00:00.000Z"
+    }
+  }
+]
+```
+
+---
+
+### PATCH `/admin/owners/:userId/approve` — Protected (ADMIN)
+
+**Permission:** `owner.review`
+
+**Request body:** None
+
+**Response `200`:**
+
+```json
+{
+  "message": "Owner profile approved",
+  "profile": {
+    "profileStatus": "VERIFIED",
+    "rejectionReason": null,
+    "...": "..."
+  }
+}
+```
+
+---
+
+### PATCH `/admin/owners/:userId/reject` — Protected (ADMIN)
+
+**Permission:** `owner.review`
+
+**Request body:**
+
+```json
+{
+  "reason": "وثيقة السجل التجاري غير صحيحة"
+}
+```
+
+**Response `200`:**
+
+```json
+{
+  "message": "Owner profile rejected",
+  "profile": {
+    "profileStatus": "REJECTED",
+    "rejectionReason": "وثيقة السجل التجاري غير صحيحة",
+    "...": "..."
+  }
+}
+```
+
+---
+
+### GET `/properties` — Protected
+
+**Permission:** `property.read`
+
+**Response `200`:**
+
+```json
+{
+  "message": "Published properties visible to authenticated users with property.read",
+  "requestedBy": { "id": "user-uuid", "role": "CUSTOMER" }
+}
+```
+
+---
+
+### POST `/properties` — Protected
+
+**Permission:** `property.create`
+
+**Request body:** Any JSON (example)
+
+```json
+{ "title": "Villa in New Cairo", "price": 5000 }
+```
+
+**Response `201`:**
+
+```json
+{
+  "message": "Property created",
+  "ownerId": "user-uuid",
+  "data": { "title": "Villa in New Cairo", "price": 5000 }
+}
+```
+
+---
+
+### PATCH `/properties/:id` — Protected
+
+**Permission:** `property.update`
+
+**Request body:** Fields to update
+
+**Response `200`:**
+
+```json
+{
+  "message": "Property {id} updated by owner",
+  "ownerId": "user-uuid",
+  "data": { }
+}
+```
+
+---
+
+### POST `/properties/:id/publish` — Protected
+
+**Permission:** `property.publish`
+
+**Response `200`:**
+
+```json
+{
+  "message": "Property {id} published",
+  "publishedBy": "user-uuid"
+}
+```
+
+---
+
+### DELETE `/properties/:id` — Protected
+
+**Permission:** `property.delete`
+
+**Response `200`:**
+
+```json
+{
+  "message": "Property {id} deleted",
+  "deletedBy": "user-uuid"
+}
+```
+
+---
+
+### GET `/properties/admin/all` — Protected (ADMIN)
+
+**Permission:** `property.read` + role `ADMIN`
+
+**Response `200`:**
+
+```json
+{
+  "message": "Admin-only: all properties including drafts",
+  "adminId": "user-uuid"
+}
+```
+
+---
+
+### POST `/bookings` — Protected
+
+**Permission:** `booking.create`
+
+**Request body:**
+
+```json
+{ "propertyId": "property-uuid", "startDate": "2026-07-01", "endDate": "2026-07-05" }
+```
+
+**Response `201`:**
+
+```json
+{
+  "message": "Booking created",
+  "customerId": "user-uuid",
+  "data": { }
+}
+```
+
+---
+
+### GET `/bookings/my` — Protected
+
+**Permission:** `booking.read`
+
+**Response `200`:**
+
+```json
+{
+  "message": "Your bookings",
+  "userId": "user-uuid"
+}
+```
+
+---
+
+### PATCH `/bookings/:id/cancel` — Protected
+
+**Permission:** `booking.cancel`
+
+**Response `200`:**
+
+```json
+{
+  "message": "Booking {id} cancelled",
+  "cancelledBy": "user-uuid"
+}
+```
+
+---
+
+## API Endpoints (Summary)
+
+| Method | Endpoint | Auth | Permission / Role |
+|--------|----------|:----:|-----------------|
+| POST | `/auth/register` | — | Public |
+| POST | `/auth/login` | — | Public |
+| POST | `/auth/phone/send-otp` | — | Public |
+| POST | `/auth/phone/verify` | — | Public |
+| GET | `/auth/google` | — | Public |
+| GET | `/auth/google/callback` | — | Public |
+| POST | `/auth/forgot-password` | — | Public |
+| POST | `/auth/verify-reset-otp` | — | Public |
+| POST | `/auth/reset-password` | — | Public |
+| POST | `/auth/refresh-token` | — | Public |
+| GET | `/health` | — | Public |
+| GET | `/health/ready` | — | Public |
+| GET | `/owner/profile` | JWT | `owner.profile.read` |
+| POST | `/owner/profile/complete` | JWT | `owner.profile.update` |
+| GET | `/admin/owners/pending` | JWT | `owner.review` |
+| PATCH | `/admin/owners/:userId/approve` | JWT | `owner.review` |
+| PATCH | `/admin/owners/:userId/reject` | JWT | `owner.review` |
+| GET | `/properties` | JWT | `property.read` |
+| POST | `/properties` | JWT | `property.create` |
+| PATCH | `/properties/:id` | JWT | `property.update` |
+| POST | `/properties/:id/publish` | JWT | `property.publish` |
+| DELETE | `/properties/:id` | JWT | `property.delete` |
+| GET | `/properties/admin/all` | JWT | ADMIN + `property.read` |
+| POST | `/bookings` | JWT | `booking.create` |
+| GET | `/bookings/my` | JWT | `booking.read` |
+| PATCH | `/bookings/:id/cancel` | JWT | `booking.cancel` |
 
 ---
 
@@ -313,6 +950,8 @@ http://localhost:3000/api/docs
 | `OTP_EXPIRY_MINUTES` | No | `5` | OTP expiration |
 | `OTP_RATE_LIMIT_TTL` | No | `60` | Rate limit window (seconds) |
 | `OTP_RATE_LIMIT_MAX` | No | `3` | Max OTP requests per window |
+| `RESEND_API_KEY` | No | — | [Resend](https://resend.com) API key for verification emails |
+| `RESEND_FROM` | No | `Aqar <onboarding@resend.dev>` | Sender address (`onboarding@resend.dev` for dev only) |
 | `SEED_ADMIN` | No | `false` | Create admin on seed |
 | `ADMIN_EMAIL` | If seed | — | Admin email |
 | `ADMIN_PASSWORD` | If seed | — | Admin password (min 12 chars) |
@@ -513,21 +1152,57 @@ Run seed once, then disable `SEED_ADMIN`.
 
 ## Auth Flows
 
-### 1. Email Register & Login
+### 1. Customer Register & Login
 
 ```bash
-# Register (CUSTOMER or OWNER only — not ADMIN)
+# Register as CUSTOMER
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Ahmed","email":"ahmed@test.com","password":"password123","role":"CUSTOMER"}'
+  -d '{
+    "name": "Ahmed",
+    "email": "customer@test.com",
+    "phone": "+201111111111",
+    "password": "password123",
+    "role": "CUSTOMER"
+  }'
 
 # Login
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"ahmed@test.com","password":"password123"}'
+  -d '{"email":"customer@test.com","password":"password123"}'
 ```
 
-### 2. Phone OTP
+### 2. Owner Register → Complete Profile → Admin Review
+
+```bash
+# Step 1: Register as OWNER (basic data only)
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mohamed Owner",
+    "email": "owner@test.com",
+    "phone": "+201222222222",
+    "password": "password123",
+    "role": "OWNER"
+  }'
+# → isProfileComplete: false, profileStatus: INCOMPLETE
+
+# Step 2: Complete profile (use accessToken from verify-email)
+curl -X POST http://localhost:3000/owner/profile/complete \
+  -H "Authorization: Bearer <accessToken>" \
+  -F "ownerType=INDIVIDUAL" \
+  -F "nationalId=@/path/to/national-id.jpg" \
+  -F "city=Cairo" \
+  -F "area=Nasr City"
+# → profileStatus: KYC_PENDING
+
+# Step 3: Admin approves
+curl -X PATCH http://localhost:3000/admin/owners/<userId>/approve \
+  -H "Authorization: Bearer <adminAccessToken>"
+# → profileStatus: VERIFIED
+```
+
+### 3. Phone OTP
 
 ```bash
 # Step 1: Send OTP
@@ -544,14 +1219,14 @@ curl -X POST http://localhost:3000/auth/phone/verify \
   -d '{"phone":"+201234567890","code":"482913","name":"Ahmed Ali"}'
 ```
 
-### 3. Google OAuth
+### 4. Google OAuth
 
 1. Configure Google Cloud Console → OAuth 2.0 credentials
 2. Set authorized redirect URI: `{APP_URL}/auth/google/callback`
 3. Visit: `GET /auth/google`
 4. After consent, redirects to `{APP_URL}/auth/callback?accessToken=...&refreshToken=...`
 
-### 4. Password Reset
+### 5. Password Reset
 
 ```bash
 # 1. Request OTP
@@ -570,14 +1245,14 @@ curl -X POST http://localhost:3000/auth/reset-password \
   -d '{"email":"ahmed@test.com","code":"123456","newPassword":"newPassword123"}'
 ```
 
-### 5. Using JWT on Protected Routes
+### 6. Using JWT on Protected Routes
 
 ```bash
 curl http://localhost:3000/properties \
   -H "Authorization: Bearer <accessToken>"
 ```
 
-### 6. Refresh Token
+### 7. Refresh Token
 
 ```bash
 curl -X POST http://localhost:3000/auth/refresh-token \
@@ -688,5 +1363,3 @@ openssl rand -base64 48
 ## License
 
 Private — Aqar Rental Property Platform.
-#   n e s t j s  
- 

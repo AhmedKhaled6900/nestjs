@@ -13,26 +13,16 @@ export class OtpService {
   ) {}
 
   async sendOtp(target: string, purpose: OtpPurpose): Promise<{ message: string }> {
-    const normalizedTarget = this.normalizeTarget(target, purpose);
-    await this.invalidateActiveOtps(normalizedTarget, purpose);
-
-    const code = this.generateCode();
-    const expiryMinutes = this.configService.get<number>('OTP_EXPIRY_MINUTES', 5);
-    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
-
-    await this.prisma.otp.create({
-      data: {
-        target: normalizedTarget,
-        code,
-        purpose,
-        expiresAt,
-      },
-    });
-
-    // In production: integrate SMS/email provider here
-    this.logger.log(`OTP for ${normalizedTarget} (${purpose}): ${code}`);
-
+    await this.issueOtp(target, purpose);
     return { message: 'OTP sent successfully' };
+  }
+
+  async sendOtpAndGetCode(
+    target: string,
+    purpose: OtpPurpose,
+  ): Promise<{ message: string; code: string }> {
+    const code = await this.issueOtp(target, purpose);
+    return { message: 'OTP sent successfully', code };
   }
 
   async verifyOtp(
@@ -62,6 +52,27 @@ export class OtpService {
     });
   }
 
+  private async issueOtp(target: string, purpose: OtpPurpose): Promise<string> {
+    const normalizedTarget = this.normalizeTarget(target, purpose);
+    await this.invalidateActiveOtps(normalizedTarget, purpose);
+
+    const code = this.generateCode();
+    const expiryMinutes = this.configService.get<number>('OTP_EXPIRY_MINUTES', 5);
+    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+
+    await this.prisma.otp.create({
+      data: {
+        target: normalizedTarget,
+        code,
+        purpose,
+        expiresAt,
+      },
+    });
+
+    this.logger.log(`OTP for ${normalizedTarget} (${purpose}): ${code}`);
+    return code;
+  }
+
   private async invalidateActiveOtps(
     target: string,
     purpose: OtpPurpose,
@@ -78,7 +89,10 @@ export class OtpService {
   }
 
   private normalizeTarget(target: string, purpose: OtpPurpose): string {
-    if (purpose === OtpPurpose.PHONE_AUTH || target.includes('+')) {
+    if (
+      purpose === OtpPurpose.PHONE_AUTH ||
+      (purpose !== OtpPurpose.EMAIL_VERIFICATION && target.includes('+'))
+    ) {
       return target.replace(/\s/g, '');
     }
     return target.toLowerCase().trim();

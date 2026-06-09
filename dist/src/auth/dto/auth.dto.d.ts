@@ -2,8 +2,9 @@ import { RoleName } from '@prisma/client';
 export declare class RegisterDto {
     name: string;
     email: string;
+    phone: string;
     password: string;
-    role?: RoleName;
+    role: RoleName;
 }
 export declare class LoginDto {
     email: string;
@@ -26,4 +27,11 @@ export declare class ResetPasswordDto {
     phone?: string;
     code: string;
     newPassword: string;
+}
+export declare class VerifyEmailDto {
+    email: string;
+    code: string;
+}
+export declare class ResendVerificationDto {
+    email: string;
 }

@@ -22,21 +22,12 @@ let OtpService = OtpService_1 = class OtpService {
         this.logger = new common_1.Logger(OtpService_1.name);
     }
     async sendOtp(target, purpose) {
-        const normalizedTarget = this.normalizeTarget(target, purpose);
-        await this.invalidateActiveOtps(normalizedTarget, purpose);
-        const code = this.generateCode();
-        const expiryMinutes = this.configService.get('OTP_EXPIRY_MINUTES', 5);
-        const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
-        await this.prisma.otp.create({
-            data: {
-                target: normalizedTarget,
-                code,
-                purpose,
-                expiresAt,
-            },
-        });
-        this.logger.log(`OTP for ${normalizedTarget} (${purpose}): ${code}`);
+        await this.issueOtp(target, purpose);
         return { message: 'OTP sent successfully' };
+    }
+    async sendOtpAndGetCode(target, purpose) {
+        const code = await this.issueOtp(target, purpose);
+        return { message: 'OTP sent successfully', code };
     }
     async verifyOtp(target, code, purpose) {
         const normalizedTarget = this.normalizeTarget(target, purpose);
@@ -57,6 +48,23 @@ let OtpService = OtpService_1 = class OtpService {
             data: { usedAt: new Date() },
         });
     }
+    async issueOtp(target, purpose) {
+        const normalizedTarget = this.normalizeTarget(target, purpose);
+        await this.invalidateActiveOtps(normalizedTarget, purpose);
+        const code = this.generateCode();
+        const expiryMinutes = this.configService.get('OTP_EXPIRY_MINUTES', 5);
+        const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+        await this.prisma.otp.create({
+            data: {
+                target: normalizedTarget,
+                code,
+                purpose,
+                expiresAt,
+            },
+        });
+        this.logger.log(`OTP for ${normalizedTarget} (${purpose}): ${code}`);
+        return code;
+    }
     async invalidateActiveOtps(target, purpose) {
         await this.prisma.otp.updateMany({
             where: {
@@ -69,7 +77,8 @@ let OtpService = OtpService_1 = class OtpService {
         });
     }
     normalizeTarget(target, purpose) {
-        if (purpose === client_1.OtpPurpose.PHONE_AUTH || target.includes('+')) {
+        if (purpose === client_1.OtpPurpose.PHONE_AUTH ||
+            (purpose !== client_1.OtpPurpose.EMAIL_VERIFICATION && target.includes('+'))) {
             return target.replace(/\s/g, '');
         }
         return target.toLowerCase().trim();

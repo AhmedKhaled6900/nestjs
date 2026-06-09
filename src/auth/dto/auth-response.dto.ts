@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { RoleName } from '@prisma/client';
+import { ProfileStatus, RoleName } from '@prisma/client';
 
 export class UserResponseDto {
   @ApiProperty({ example: 'uuid-here' })
@@ -16,6 +16,21 @@ export class UserResponseDto {
 
   @ApiProperty({ enum: RoleName, example: 'CUSTOMER' })
   role!: string;
+
+  @ApiProperty({ example: false, description: 'Whether email has been verified' })
+  isVerified!: boolean;
+
+  @ApiPropertyOptional({
+    description: 'True if owner submitted extended profile (not INCOMPLETE)',
+    example: false,
+  })
+  isProfileComplete?: boolean;
+
+  @ApiPropertyOptional({ enum: ProfileStatus, example: 'INCOMPLETE' })
+  profileStatus?: string | null;
+
+  @ApiPropertyOptional({ example: null, description: 'Set after profile completion' })
+  ownerType?: string | null;
 }
 
 export class AuthResponseDto {
@@ -24,6 +39,14 @@ export class AuthResponseDto {
 
   @ApiProperty({ description: 'JWT refresh token (7 days)' })
   refreshToken!: string;
+
+  @ApiProperty({ type: UserResponseDto })
+  user!: UserResponseDto;
+}
+
+export class RegisterPendingResponseDto {
+  @ApiProperty({ example: 'Registration successful. Please verify your email.' })
+  message!: string;
 
   @ApiProperty({ type: UserResponseDto })
   user!: UserResponseDto;

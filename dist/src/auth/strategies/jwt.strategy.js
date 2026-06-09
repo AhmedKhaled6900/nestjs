@@ -38,6 +38,9 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         if (!user) {
             throw new common_1.UnauthorizedException('User not found');
         }
+        if (!user.isVerified) {
+            throw new common_1.UnauthorizedException('Email not verified');
+        }
         return {
             id: user.id,
             name: user.name,

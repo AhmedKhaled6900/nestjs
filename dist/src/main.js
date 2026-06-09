@@ -4,6 +4,7 @@ const core_1 = require("@nestjs/core");
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const swagger_1 = require("@nestjs/swagger");
+const path_1 = require("path");
 const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
@@ -19,6 +20,9 @@ async function bootstrap() {
     if (isProduction) {
         app.getHttpAdapter().getInstance().set('trust proxy', 1);
     }
+    app.useStaticAssets((0, path_1.join)(process.cwd(), 'uploads'), {
+        prefix: '/uploads/',
+    });
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
@@ -31,9 +35,13 @@ async function bootstrap() {
             .setVersion('1.0')
             .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' }, 'access-token')
             .addTag('Auth', 'Registration, login, OTP, OAuth, password reset & tokens')
-            .addTag('Properties', 'Property management (RBAC protected)')
+            .addTag('Categories', 'Property category tree')
+            .addTag('Properties', 'Property listings and images')
+            .addTag('Admin - Properties', 'Admin property review')
             .addTag('Bookings', 'Booking management (RBAC protected)')
             .addTag('Health', 'Health check')
+            .addTag('Owner Profile', 'Owner KYC profile completion')
+            .addTag('Admin - Owner Review', 'Admin approve/reject owner profiles')
             .build();
         const document = swagger_1.SwaggerModule.createDocument(app, config);
         swagger_1.SwaggerModule.setup('api/docs', app, document, {
@@ -44,7 +52,7 @@ async function bootstrap() {
             },
         });
     }
-    const port = parseInt(configService.get('PORT', '3000'), 10);
+    const port = process.env.PORT || 8080;
     await app.listen(port, '0.0.0.0');
     console.log(`Environment: ${configService.get('NODE_ENV', 'development')}`);
     console.log(`Server:      listening on 0.0.0.0:${port}`);

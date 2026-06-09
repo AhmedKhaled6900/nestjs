@@ -1,47 +1,457 @@
 import { AuthUser } from '../auth/interfaces/auth.interface';
+import { CreatePropertyDto } from './dto/create-property.dto';
+import { UpdatePropertyImageDto, UploadPropertyImagesDto } from './dto/property-image.dto';
+import { QueryOwnerPropertyDto, QueryPropertyDto } from './dto/query-property.dto';
+import { UpdatePropertyDto } from './dto/update-property.dto';
+import { PropertyImageService } from './property-image.service';
+import { PropertyService } from './property.service';
 export declare class PropertyController {
-    findAll(user: AuthUser): {
-        message: string;
-        requestedBy: {
+    private readonly propertyService;
+    private readonly propertyImageService;
+    constructor(propertyService: PropertyService, propertyImageService: PropertyImageService);
+    findApproved(query: QueryPropertyDto): Promise<{
+        items: {
             id: string;
-            role: string;
+            title: string;
+            description: string;
+            price: number;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
         };
-    };
-    create(body: Record<string, unknown>, user: AuthUser): {
-        message: string;
+    }>;
+    findMine(user: AuthUser, query: QueryOwnerPropertyDto): Promise<{
+        items: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
+    }>;
+    findOne(id: string): Promise<{
+        id: string;
+        title: string;
+        description: string;
+        price: number;
+        city: string;
+        area: string;
+        address: string;
+        latitude: number | null;
+        longitude: number | null;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        areaSize: number | null;
+        purpose: import(".prisma/client").$Enums.PropertyPurpose;
+        status: import(".prisma/client").$Enums.PropertyStatus;
+        categoryId: string;
+        category: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId: string | null;
+        };
         ownerId: string;
-        data: Record<string, unknown>;
-    };
-    update(id: string, body: Record<string, unknown>, user: AuthUser): {
-        message: string;
+        owner: ({
+            id: string;
+            name: string;
+        } & {
+            id: string;
+            name: string;
+            email?: string | null;
+            phone?: string | null;
+        }) | undefined;
+        rejectionReason: string | null;
+        submittedAt: Date | null;
+        approvedAt: Date | null;
+        images: {
+            id: string;
+            imageUrl: string | null;
+            isPrimary: boolean;
+            order: number;
+        }[];
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    create(user: AuthUser, dto: CreatePropertyDto): Promise<{
+        id: string;
+        title: string;
+        description: string;
+        price: number;
+        city: string;
+        area: string;
+        address: string;
+        latitude: number | null;
+        longitude: number | null;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        areaSize: number | null;
+        purpose: import(".prisma/client").$Enums.PropertyPurpose;
+        status: import(".prisma/client").$Enums.PropertyStatus;
+        categoryId: string;
+        category: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId: string | null;
+        };
         ownerId: string;
-        data: Record<string, unknown>;
-    };
-    publish(id: string, user: AuthUser): {
+        owner: ({
+            id: string;
+            name: string;
+        } & {
+            id: string;
+            name: string;
+            email?: string | null;
+            phone?: string | null;
+        }) | undefined;
+        rejectionReason: string | null;
+        submittedAt: Date | null;
+        approvedAt: Date | null;
+        images: {
+            id: string;
+            imageUrl: string | null;
+            isPrimary: boolean;
+            order: number;
+        }[];
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    update(id: string, user: AuthUser, dto: UpdatePropertyDto): Promise<{
+        id: string;
+        title: string;
+        description: string;
+        price: number;
+        city: string;
+        area: string;
+        address: string;
+        latitude: number | null;
+        longitude: number | null;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        areaSize: number | null;
+        purpose: import(".prisma/client").$Enums.PropertyPurpose;
+        status: import(".prisma/client").$Enums.PropertyStatus;
+        categoryId: string;
+        category: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId: string | null;
+        };
+        ownerId: string;
+        owner: ({
+            id: string;
+            name: string;
+        } & {
+            id: string;
+            name: string;
+            email?: string | null;
+            phone?: string | null;
+        }) | undefined;
+        rejectionReason: string | null;
+        submittedAt: Date | null;
+        approvedAt: Date | null;
+        images: {
+            id: string;
+            imageUrl: string | null;
+            isPrimary: boolean;
+            order: number;
+        }[];
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    remove(id: string, user: AuthUser): Promise<{
         message: string;
-        publishedBy: string;
-    };
-    remove(id: string, user: AuthUser): {
+    }>;
+    uploadImages(id: string, user: AuthUser, files: Express.Multer.File[], dto: UploadPropertyImagesDto): Promise<{
         message: string;
-        deletedBy: string;
-    };
-    adminListAll(user: AuthUser): {
+        images: {
+            id: string;
+            imageUrl: string | null;
+            isPrimary: boolean;
+            order: number;
+        }[];
+        property: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    }>;
+    updateImage(id: string, imageId: string, user: AuthUser, dto: UpdatePropertyImageDto): Promise<{
         message: string;
-        adminId: string;
-    };
-}
-export declare class BookingController {
-    create(body: Record<string, unknown>, user: AuthUser): {
+        image: {
+            id: string;
+            imageUrl: string | null;
+            isPrimary: boolean;
+            order: number;
+        };
+    }>;
+    removeImage(id: string, imageId: string, user: AuthUser): Promise<{
         message: string;
-        customerId: string;
-        data: Record<string, unknown>;
-    };
-    myBookings(user: AuthUser): {
+    }>;
+    submit(id: string, user: AuthUser): Promise<{
         message: string;
-        userId: string;
-    };
-    cancel(id: string, user: AuthUser): {
+        property: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    }>;
+    markSold(id: string, user: AuthUser): Promise<{
         message: string;
-        cancelledBy: string;
-    };
+        property: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    }>;
+    markRented(id: string, user: AuthUser): Promise<{
+        message: string;
+        property: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    }>;
 }

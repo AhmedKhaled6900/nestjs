@@ -19,6 +19,7 @@ const password_service_1 = require("./services/password.service");
 const token_service_1 = require("./services/token.service");
 const google_strategy_1 = require("./strategies/google.strategy");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
+const email_service_1 = require("./email/email.service");
 function isGoogleOAuthConfigured() {
     return Boolean(process.env.GOOGLE_CLIENT_ID &&
         process.env.GOOGLE_CLIENT_SECRET &&
@@ -38,6 +39,7 @@ exports.AuthModule = AuthModule = __decorate([
             token_service_1.TokenService,
             password_service_1.PasswordService,
             otp_service_1.OtpService,
+            email_service_1.EmailService,
             jwt_strategy_1.JwtStrategy,
             ...googleProviders,
             { provide: core_1.APP_GUARD, useClass: auth_guards_1.JwtAuthGuard },

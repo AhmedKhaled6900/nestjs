@@ -20,15 +20,23 @@ export class RegisterDto {
   @IsEmail()
   email!: string;
 
+  @ApiProperty({ example: '+201234567890' })
+  @IsString()
+  @IsNotEmpty()
+  phone!: string;
+
   @ApiProperty({ example: 'password123', minLength: 8 })
   @IsString()
   @MinLength(8)
   password!: string;
 
-  @ApiPropertyOptional({ enum: RoleName, default: 'CUSTOMER', description: 'Cannot self-register as ADMIN' })
-  @IsOptional()
+  @ApiProperty({
+    enum: [RoleName.CUSTOMER, RoleName.OWNER],
+    example: 'CUSTOMER',
+    description: 'CUSTOMER or OWNER only',
+  })
   @IsEnum(RoleName)
-  role?: RoleName;
+  role!: RoleName;
 }
 
 export class LoginDto {
@@ -101,4 +109,21 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(8)
   newPassword!: string;
+}
+
+export class VerifyEmailDto {
+  @ApiProperty({ example: 'ahmed@example.com' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ example: '123456', description: '6-digit code from verification email' })
+  @IsString()
+  @IsNotEmpty()
+  code!: string;
+}
+
+export class ResendVerificationDto {
+  @ApiProperty({ example: 'ahmed@example.com' })
+  @IsEmail()
+  email!: string;
 }

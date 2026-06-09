@@ -1,136 +1,179 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { RequirePermissions, RequireRoles } from '../auth/decorators/permissions.decorator';
+import { Public, RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { AuthUser } from '../auth/interfaces/auth.interface';
+import {
+  MAX_PROPERTY_IMAGE_SIZE_BYTES,
+  MAX_PROPERTY_IMAGES,
+} from '../upload/upload.constants';
+import { CreatePropertyDto } from './dto/create-property.dto';
+import {
+  RejectPropertyDto,
+  UpdatePropertyImageDto,
+  UploadPropertyImagesDto,
+} from './dto/property-image.dto';
+import { QueryOwnerPropertyDto, QueryPropertyDto } from './dto/query-property.dto';
+import { UpdatePropertyDto } from './dto/update-property.dto';
+import { PropertyImageService } from './property-image.service';
+import { PropertyService } from './property.service';
+
+const propertyImagesInterceptor = FilesInterceptor('images', MAX_PROPERTY_IMAGES, {
+  storage: memoryStorage(),
+  limits: { fileSize: MAX_PROPERTY_IMAGE_SIZE_BYTES },
+});
 
 @ApiTags('Properties')
-@ApiBearerAuth('access-token')
 @Controller('properties')
 export class PropertyController {
+  constructor(
+    private readonly propertyService: PropertyService,
+    private readonly propertyImageService: PropertyImageService,
+  ) {}
+
+  @Public()
   @Get()
+  @ApiOperation({ summary: 'List approved properties (public catalog)' })
+  findApproved(@Query() query: QueryPropertyDto) {
+    return this.propertyService.findApproved(query);
+  }
+
+  @Get('my/list')
   @RequirePermissions('property.read')
-  @ApiOperation({ summary: 'List published properties', description: 'Permission: `property.read`' })
-  @ApiResponse({ status: 200, description: 'List of properties' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Missing property.read permission' })
-  findAll(@CurrentUser() user: AuthUser) {
-    return {
-      message: 'Published properties visible to authenticated users with property.read',
-      requestedBy: { id: user.id, role: user.role },
-    };
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'List my properties (owner)' })
+  findMine(
+    @CurrentUser() user: AuthUser,
+    @Query() query: QueryOwnerPropertyDto,
+  ) {
+    return this.propertyService.findMine(user.id, query);
+  }
+
+  @Public()
+  @Get(':id')
+  @ApiOperation({ summary: 'Get property details (approved only for public)' })
+  @ApiParam({ name: 'id', example: 'uuid-here' })
+  findOne(@Param('id') id: string) {
+    return this.propertyService.findById(id);
   }
 
   @Post()
   @RequirePermissions('property.create')
-  @ApiOperation({ summary: 'Create property', description: 'Permission: `property.create` (Owner/Admin)' })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Create property as DRAFT (verified owner)' })
   @ApiResponse({ status: 201, description: 'Property created' })
-  @ApiResponse({ status: 403, description: 'Missing property.create permission' })
-  create(@Body() body: Record<string, unknown>, @CurrentUser() user: AuthUser) {
-    return {
-      message: 'Property created',
-      ownerId: user.id,
-      data: body,
-    };
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreatePropertyDto) {
+    return this.propertyService.create(user.id, dto);
   }
 
   @Patch(':id')
   @RequirePermissions('property.update')
-  @ApiOperation({ summary: 'Update property', description: 'Permission: `property.update`' })
-  @ApiParam({ name: 'id', example: 'uuid-here' })
-  @ApiResponse({ status: 200, description: 'Property updated' })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update property (DRAFT or REJECTED only)' })
   update(
     @Param('id') id: string,
-    @Body() body: Record<string, unknown>,
     @CurrentUser() user: AuthUser,
+    @Body() dto: UpdatePropertyDto,
   ) {
-    return {
-      message: `Property ${id} updated by owner`,
-      ownerId: user.id,
-      data: body,
-    };
-  }
-
-  @Post(':id/publish')
-  @RequirePermissions('property.publish')
-  @ApiOperation({ summary: 'Publish property', description: 'Permission: `property.publish`' })
-  @ApiParam({ name: 'id', example: 'uuid-here' })
-  @ApiResponse({ status: 200, description: 'Property published' })
-  publish(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return {
-      message: `Property ${id} published`,
-      publishedBy: user.id,
-    };
+    return this.propertyService.update(id, user.id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('property.delete')
-  @ApiOperation({ summary: 'Delete property', description: 'Permission: `property.delete`' })
-  @ApiParam({ name: 'id', example: 'uuid-here' })
-  @ApiResponse({ status: 200, description: 'Property deleted' })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Delete property (DRAFT or REJECTED only)' })
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return {
-      message: `Property ${id} deleted`,
-      deletedBy: user.id,
-    };
+    return this.propertyService.remove(id, user.id);
   }
 
-  @Get('admin/all')
-  @RequireRoles('ADMIN')
-  @RequirePermissions('property.read')
-  @ApiOperation({ summary: 'Admin: list all properties', description: 'Role: ADMIN + Permission: `property.read`' })
-  @ApiResponse({ status: 200, description: 'All properties including drafts' })
-  @ApiResponse({ status: 403, description: 'Admin role required' })
-  adminListAll(@CurrentUser() user: AuthUser) {
-    return {
-      message: 'Admin-only: all properties including drafts',
-      adminId: user.id,
-    };
-  }
-}
-
-@ApiTags('Bookings')
-@ApiBearerAuth('access-token')
-@Controller('bookings')
-export class BookingController {
-  @Post()
-  @RequirePermissions('booking.create')
-  @ApiOperation({ summary: 'Create booking', description: 'Permission: `booking.create` (Customer)' })
-  @ApiResponse({ status: 201, description: 'Booking created' })
-  create(@Body() body: Record<string, unknown>, @CurrentUser() user: AuthUser) {
-    return {
-      message: 'Booking created',
-      customerId: user.id,
-      data: body,
-    };
+  @Post(':id/images')
+  @RequirePermissions('property.update')
+  @ApiBearerAuth('access-token')
+  @UseInterceptors(propertyImagesInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UploadPropertyImagesDto })
+  @ApiOperation({ summary: 'Upload property images' })
+  uploadImages(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() dto: UploadPropertyImagesDto,
+  ) {
+    return this.propertyImageService.uploadImages(
+      id,
+      user.id,
+      files ?? [],
+      dto.primaryIndex ?? 0,
+    );
   }
 
-  @Get('my')
-  @RequirePermissions('booking.read')
-  @ApiOperation({ summary: 'Get my bookings', description: 'Permission: `booking.read`' })
-  @ApiResponse({ status: 200, description: 'User bookings list' })
-  myBookings(@CurrentUser() user: AuthUser) {
-    return {
-      message: 'Your bookings',
-      userId: user.id,
-    };
+  @Patch(':id/images/:imageId')
+  @RequirePermissions('property.update')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update image order or primary flag' })
+  updateImage(
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdatePropertyImageDto,
+  ) {
+    return this.propertyImageService.updateImage(id, imageId, user.id, dto);
   }
 
-  @Patch(':id/cancel')
-  @RequirePermissions('booking.cancel')
-  @ApiOperation({ summary: 'Cancel booking', description: 'Permission: `booking.cancel`' })
-  @ApiParam({ name: 'id', example: 'uuid-here' })
-  @ApiResponse({ status: 200, description: 'Booking cancelled' })
-  cancel(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return {
-      message: `Booking ${id} cancelled`,
-      cancelledBy: user.id,
-    };
+  @Delete(':id/images/:imageId')
+  @RequirePermissions('property.update')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Delete property image' })
+  removeImage(
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.propertyImageService.removeImage(id, imageId, user.id);
+  }
+
+  @Post(':id/submit')
+  @RequirePermissions('property.publish')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Submit property for admin review (→ PENDING)' })
+  submit(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.propertyService.submitForReview(id, user.id);
+  }
+
+  @Patch(':id/mark-sold')
+  @RequirePermissions('property.update')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Mark approved SALE property as SOLD' })
+  markSold(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.propertyService.markSold(id, user.id);
+  }
+
+  @Patch(':id/mark-rented')
+  @RequirePermissions('property.update')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Mark approved RENT property as RENTED' })
+  markRented(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.propertyService.markRented(id, user.id);
   }
 }

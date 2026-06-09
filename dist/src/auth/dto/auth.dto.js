@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ResetPasswordDto = exports.VerifyResetOtpDto = exports.ForgotPasswordDto = exports.RefreshTokenDto = exports.LoginDto = exports.RegisterDto = void 0;
+exports.ResendVerificationDto = exports.VerifyEmailDto = exports.ResetPasswordDto = exports.VerifyResetOtpDto = exports.ForgotPasswordDto = exports.RefreshTokenDto = exports.LoginDto = exports.RegisterDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
@@ -28,14 +28,23 @@ __decorate([
     __metadata("design:type", String)
 ], RegisterDto.prototype, "email", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: '+201234567890' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "phone", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)({ example: 'password123', minLength: 8 }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MinLength)(8),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ enum: client_1.RoleName, default: 'CUSTOMER', description: 'Cannot self-register as ADMIN' }),
-    (0, class_validator_1.IsOptional)(),
+    (0, swagger_1.ApiProperty)({
+        enum: [client_1.RoleName.CUSTOMER, client_1.RoleName.OWNER],
+        example: 'CUSTOMER',
+        description: 'CUSTOMER or OWNER only',
+    }),
     (0, class_validator_1.IsEnum)(client_1.RoleName),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "role", void 0);
@@ -128,4 +137,26 @@ __decorate([
     (0, class_validator_1.MinLength)(8),
     __metadata("design:type", String)
 ], ResetPasswordDto.prototype, "newPassword", void 0);
+class VerifyEmailDto {
+}
+exports.VerifyEmailDto = VerifyEmailDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'ahmed@example.com' }),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], VerifyEmailDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '123456', description: '6-digit code from verification email' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], VerifyEmailDto.prototype, "code", void 0);
+class ResendVerificationDto {
+}
+exports.ResendVerificationDto = ResendVerificationDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'ahmed@example.com' }),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], ResendVerificationDto.prototype, "email", void 0);
 //# sourceMappingURL=auth.dto.js.map

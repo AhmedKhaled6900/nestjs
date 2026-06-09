@@ -1,11 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
@@ -22,6 +24,10 @@ async function bootstrap() {
   if (isProduction) {
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
   }
+
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -43,9 +49,13 @@ async function bootstrap() {
         'access-token',
       )
       .addTag('Auth', 'Registration, login, OTP, OAuth, password reset & tokens')
-      .addTag('Properties', 'Property management (RBAC protected)')
+      .addTag('Categories', 'Property category tree')
+      .addTag('Properties', 'Property listings and images')
+      .addTag('Admin - Properties', 'Admin property review')
       .addTag('Bookings', 'Booking management (RBAC protected)')
       .addTag('Health', 'Health check')
+      .addTag('Owner Profile', 'Owner KYC profile completion')
+      .addTag('Admin - Owner Review', 'Admin approve/reject owner profiles')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

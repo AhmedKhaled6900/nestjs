@@ -34,6 +34,12 @@ let AuthController = class AuthController {
     login(dto) {
         return this.authService.login(dto);
     }
+    verifyEmail(dto) {
+        return this.authService.verifyEmail(dto);
+    }
+    resendVerification(dto) {
+        return this.authService.resendVerification(dto);
+    }
     sendPhoneOtp(dto) {
         return this.authService.sendPhoneOtp(dto.phone);
     }
@@ -67,8 +73,11 @@ exports.AuthController = AuthController;
 __decorate([
     (0, permissions_decorator_1.Public)(),
     (0, common_1.Post)('register'),
-    (0, swagger_1.ApiOperation)({ summary: 'Register with email & password' }),
-    (0, swagger_1.ApiResponse)({ status: 201, type: auth_response_dto_1.AuthResponseDto }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Register with email, phone & password',
+        description: 'Does not return tokens. Sends verification email. Use POST /auth/verify-email to activate.',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 201, type: auth_response_dto_1.RegisterPendingResponseDto }),
     (0, swagger_1.ApiResponse)({ status: 409, description: 'Email already registered' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -81,11 +90,34 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Login with email & password' }),
     (0, swagger_1.ApiResponse)({ status: 200, type: auth_response_dto_1.AuthResponseDto }),
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Invalid credentials' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Email not verified — verification email resent' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [auth_dto_1.LoginDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, permissions_decorator_1.Public)(),
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
+    (0, common_1.Post)('verify-email'),
+    (0, swagger_1.ApiOperation)({ summary: 'Verify email with OTP code', description: 'Returns JWT tokens after successful verification' }),
+    (0, swagger_1.ApiResponse)({ status: 200, type: auth_response_dto_1.AuthResponseDto }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.VerifyEmailDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "verifyEmail", null);
+__decorate([
+    (0, permissions_decorator_1.Public)(),
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
+    (0, common_1.Post)('resend-verification'),
+    (0, swagger_1.ApiOperation)({ summary: 'Resend email verification code' }),
+    (0, swagger_1.ApiResponse)({ status: 200, type: auth_response_dto_1.MessageResponseDto }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.ResendVerificationDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "resendVerification", null);
 __decorate([
     (0, permissions_decorator_1.Public)(),
     (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),

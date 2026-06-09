@@ -9,7 +9,12 @@ export declare class OtpService {
     sendOtp(target: string, purpose: OtpPurpose): Promise<{
         message: string;
     }>;
+    sendOtpAndGetCode(target: string, purpose: OtpPurpose): Promise<{
+        message: string;
+        code: string;
+    }>;
     verifyOtp(target: string, code: string, purpose: OtpPurpose): Promise<void>;
+    private issueOtp;
     private invalidateActiveOtps;
     private normalizeTarget;
     private generateCode;

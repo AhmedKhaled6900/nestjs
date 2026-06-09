@@ -10,6 +10,7 @@ import { PasswordService } from './services/password.service';
 import { TokenService } from './services/token.service';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { EmailService } from './email/email.service';
 
 function isGoogleOAuthConfigured(): boolean {
   return Boolean(
@@ -30,6 +31,7 @@ const googleProviders = isGoogleOAuthConfigured() ? [GoogleStrategy] : [];
     TokenService,
     PasswordService,
     OtpService,
+    EmailService,
     JwtStrategy,
     ...googleProviders,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
