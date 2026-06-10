@@ -93,7 +93,17 @@ export class CreatePropertyDto {
   @IsEnum(PropertyPurpose)
   purpose!: PropertyPurpose;
 
-  @ApiProperty({ example: 'uuid-of-subcategory', description: 'Leaf subcategory ID' })
+  @ApiProperty({
+    example: 'uuid-of-main-category',
+    description: 'Main category — must be parent of subcategoryId',
+  })
   @IsUUID()
-  categoryId!: string;
+  parentCategoryId!: string;
+
+  @ApiProperty({
+    example: 'uuid-of-subcategory',
+    description: 'Subcategory (leaf) ID',
+  })
+  @IsUUID()
+  subcategoryId!: string;
 }

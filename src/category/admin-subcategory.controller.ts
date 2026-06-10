@@ -27,6 +27,23 @@ import { QueryAdminCategoryDto } from './dto/query-admin-category.dto';
 export class AdminSubcategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @Get('select-menu')
+  @Head('select-menu')
+  @RequireRoles('ADMIN')
+  @RequirePermissions('category.read')
+  @ApiOperation({
+    summary: 'All subcategories for admin select menus (one request, includes inactive)',
+    description:
+      'Optional parentId query filters by main category UUID.',
+  })
+  selectMenu(@Query() query: QueryAdminCategoryDto) {
+    return this.categoryService.findSubcategorySelectMenu({
+      parentId: query.parentId,
+      activeOnly: false,
+      isActive: query.isActive,
+    });
+  }
+
   @Get()
   @Head()
   @RequireRoles('ADMIN')
@@ -88,6 +105,22 @@ export class AdminSubcategoryController {
 @Controller('admin/categories')
 export class AdminSubcategoryLegacyController {
   constructor(private readonly categoryService: CategoryService) {}
+
+  @Get(':parentId/subcategories/select-menu')
+  @Head(':parentId/subcategories/select-menu')
+  @RequireRoles('ADMIN')
+  @RequirePermissions('category.read')
+  @ApiOperation({
+    summary: 'All subcategories of a main category for select menus (legacy path)',
+    description: 'Returns every subcategory under parentId in one request (no pagination).',
+  })
+  @ApiParam({ name: 'parentId', description: 'Main category UUID' })
+  selectMenuByParent(@Param('parentId') parentId: string) {
+    return this.categoryService.findSubcategorySelectMenu({
+      parentId,
+      activeOnly: false,
+    });
+  }
 
   @Get(':parentId/subcategories')
   @Head(':parentId/subcategories')

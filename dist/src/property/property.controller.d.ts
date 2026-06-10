@@ -25,6 +25,19 @@ export declare class PropertyController {
         areaSize: number | null;
         purpose: import(".prisma/client").$Enums.PropertyPurpose;
         status: import(".prisma/client").$Enums.PropertyStatus;
+        parentCategoryId: string | null;
+        parentCategory: {
+            id: string;
+            name: string;
+            slug: string;
+        } | null;
+        subcategoryId: string;
+        subcategory: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId: string | null;
+        };
         categoryId: string;
         category: {
             id: string;
@@ -71,6 +84,19 @@ export declare class PropertyController {
         areaSize: number | null;
         purpose: import(".prisma/client").$Enums.PropertyPurpose;
         status: import(".prisma/client").$Enums.PropertyStatus;
+        parentCategoryId: string | null;
+        parentCategory: {
+            id: string;
+            name: string;
+            slug: string;
+        } | null;
+        subcategoryId: string;
+        subcategory: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId: string | null;
+        };
         categoryId: string;
         category: {
             id: string;
@@ -117,6 +143,19 @@ export declare class PropertyController {
         areaSize: number | null;
         purpose: import(".prisma/client").$Enums.PropertyPurpose;
         status: import(".prisma/client").$Enums.PropertyStatus;
+        parentCategoryId: string | null;
+        parentCategory: {
+            id: string;
+            name: string;
+            slug: string;
+        } | null;
+        subcategoryId: string;
+        subcategory: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId: string | null;
+        };
         categoryId: string;
         category: {
             id: string;
@@ -163,6 +202,19 @@ export declare class PropertyController {
         areaSize: number | null;
         purpose: import(".prisma/client").$Enums.PropertyPurpose;
         status: import(".prisma/client").$Enums.PropertyStatus;
+        parentCategoryId: string | null;
+        parentCategory: {
+            id: string;
+            name: string;
+            slug: string;
+        } | null;
+        subcategoryId: string;
+        subcategory: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId: string | null;
+        };
         categoryId: string;
         category: {
             id: string;
@@ -209,6 +261,19 @@ export declare class PropertyController {
         areaSize: number | null;
         purpose: import(".prisma/client").$Enums.PropertyPurpose;
         status: import(".prisma/client").$Enums.PropertyStatus;
+        parentCategoryId: string | null;
+        parentCategory: {
+            id: string;
+            name: string;
+            slug: string;
+        } | null;
+        subcategoryId: string;
+        subcategory: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId: string | null;
+        };
         categoryId: string;
         category: {
             id: string;
@@ -266,6 +331,19 @@ export declare class PropertyController {
             areaSize: number | null;
             purpose: import(".prisma/client").$Enums.PropertyPurpose;
             status: import(".prisma/client").$Enums.PropertyStatus;
+            parentCategoryId: string | null;
+            parentCategory: {
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+            subcategoryId: string;
+            subcategory: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
             categoryId: string;
             category: {
                 id: string;
@@ -315,6 +393,19 @@ export declare class PropertyController {
             areaSize: number | null;
             purpose: import(".prisma/client").$Enums.PropertyPurpose;
             status: import(".prisma/client").$Enums.PropertyStatus;
+            parentCategoryId: string | null;
+            parentCategory: {
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+            subcategoryId: string;
+            subcategory: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
             categoryId: string;
             category: {
                 id: string;
@@ -364,6 +455,19 @@ export declare class PropertyController {
             areaSize: number | null;
             purpose: import(".prisma/client").$Enums.PropertyPurpose;
             status: import(".prisma/client").$Enums.PropertyStatus;
+            parentCategoryId: string | null;
+            parentCategory: {
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+            subcategoryId: string;
+            subcategory: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
             categoryId: string;
             category: {
                 id: string;
@@ -425,6 +529,19 @@ export declare class PropertyController {
             areaSize: number | null;
             purpose: import(".prisma/client").$Enums.PropertyPurpose;
             status: import(".prisma/client").$Enums.PropertyStatus;
+            parentCategoryId: string | null;
+            parentCategory: {
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+            subcategoryId: string;
+            subcategory: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
             categoryId: string;
             category: {
                 id: string;
@@ -474,6 +591,19 @@ export declare class PropertyController {
             areaSize: number | null;
             purpose: import(".prisma/client").$Enums.PropertyPurpose;
             status: import(".prisma/client").$Enums.PropertyStatus;
+            parentCategoryId: string | null;
+            parentCategory: {
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+            subcategoryId: string;
+            subcategory: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
             categoryId: string;
             category: {
                 id: string;
@@ -523,6 +653,19 @@ export declare class PropertyController {
             areaSize: number | null;
             purpose: import(".prisma/client").$Enums.PropertyPurpose;
             status: import(".prisma/client").$Enums.PropertyStatus;
+            parentCategoryId: string | null;
+            parentCategory: {
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+            subcategoryId: string;
+            subcategory: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
             categoryId: string;
             category: {
                 id: string;

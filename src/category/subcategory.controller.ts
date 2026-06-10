@@ -10,6 +10,20 @@ export class SubcategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Public()
+  @Get('select-menu')
+  @ApiOperation({
+    summary: 'All subcategories for select menus (one request, no pagination)',
+    description:
+      'Returns every active subcategory. Optional parentId limits to one main category.',
+  })
+  selectMenu(@Query() query: QuerySubcategoryDto) {
+    return this.categoryService.findSubcategorySelectMenu({
+      parentId: query.parentId,
+      activeOnly: true,
+    });
+  }
+
+  @Public()
   @Get()
   @ApiOperation({
     summary: 'List all subcategories (paginated)',

@@ -73,12 +73,7 @@ export class PropertyImageService {
 
     const updated = await this.prisma.property.findUniqueOrThrow({
       where: { id: property.id },
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true, parentId: true },
-        },
-        images: { orderBy: { order: 'asc' } },
-      },
+      include: this.propertyService.propertyInclude(),
     });
 
     return {

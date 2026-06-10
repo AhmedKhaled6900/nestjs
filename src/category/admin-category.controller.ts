@@ -25,6 +25,16 @@ import { CategoryService } from './category.service';
 export class AdminCategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @Get('select-menu')
+  @RequireRoles('ADMIN')
+  @RequirePermissions('category.read')
+  @ApiOperation({
+    summary: 'Category + subcategory tree for admin select menus (includes inactive)',
+  })
+  selectMenu() {
+    return this.categoryService.findSelectMenu({ activeOnly: false });
+  }
+
   @Get()
   @RequireRoles('ADMIN')
   @RequirePermissions('category.read')

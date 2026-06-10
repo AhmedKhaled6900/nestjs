@@ -10,6 +10,17 @@ export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Public()
+  @Get('select-menu')
+  @ApiOperation({
+    summary: 'Category + subcategory tree for select menus (all active, one request)',
+    description:
+      'Returns every main category with nested subcategories. Use when creating/editing a property.',
+  })
+  selectMenu() {
+    return this.categoryService.findSelectMenu({ activeOnly: true });
+  }
+
+  @Public()
   @Get()
   @ApiOperation({ summary: 'List main categories (paginated)' })
   findAll(@Query() query: PaginationQueryDto) {

@@ -30,7 +30,13 @@ import { QueryOwnerPropertyDto, QueryPropertyDto } from './dto/query-property.dt
 import { UpdatePropertyDto } from './dto/update-property.dto';
 
 type PropertyWithRelations = Property & {
-  category: { id: string; name: string; slug: string; parentId: string | null };
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    parentId: string | null;
+    parent: { id: string; name: string; slug: string } | null;
+  };
   images: PropertyImage[];
   owner?: { id: string; name: string };
 };
@@ -47,7 +53,11 @@ export class PropertyService {
 
   async create(ownerId: string, dto: CreatePropertyDto) {
     await this.assertCanManageProperties(ownerId);
-    await this.categoryService.assertLeafCategory(dto.categoryId);
+    await this.categoryService.assertSubcategoryUnderParent(
+      dto.subcategoryId,
+      dto.parentCategoryId,
+    );
+    await this.categoryService.assertLeafCategory(dto.subcategoryId);
     this.validatePricePeriod(dto.purpose, dto.pricePeriod);
 
     const property = await this.prisma.property.create({
@@ -159,7 +169,17 @@ export class PropertyService {
       dto.pricePeriod !== undefined ? dto.pricePeriod : property.pricePeriod;
     this.validatePricePeriod(nextPurpose, nextPricePeriod);
 
-    if (dto.categoryId) {
+    if (dto.subcategoryId || dto.parentCategoryId) {
+      const subId = dto.subcategoryId;
+      const parentId = dto.parentCategoryId;
+      if (!subId || !parentId) {
+        throw new BadRequestException(
+          'parentCategoryId and subcategoryId must be provided together',
+        );
+      }
+      await this.categoryService.assertSubcategoryUnderParent(subId, parentId);
+      await this.categoryService.assertLeafCategory(subId);
+    } else if (dto.categoryId) {
       await this.categoryService.assertLeafCategory(dto.categoryId);
     }
 
@@ -455,8 +475,28 @@ export class PropertyService {
       areaSize: property.areaSize?.toNumber() ?? null,
       purpose: property.purpose,
       status: property.status,
+      parentCategoryId: property.category.parent?.id ?? property.category.parentId,
+      parentCategory: property.category.parent
+        ? {
+            id: property.category.parent.id,
+            name: property.category.parent.name,
+            slug: property.category.parent.slug,
+          }
+        : null,
+      subcategoryId: property.categoryId,
+      subcategory: {
+        id: property.category.id,
+        name: property.category.name,
+        slug: property.category.slug,
+        parentId: property.category.parentId,
+      },
       categoryId: property.categoryId,
-      category: property.category,
+      category: {
+        id: property.category.id,
+        name: property.category.name,
+        slug: property.category.slug,
+        parentId: property.category.parentId,
+      },
       ownerId: property.ownerId,
       owner: property.owner ?? undefined,
       rejectionReason: property.rejectionReason,
@@ -569,13 +609,30 @@ export class PropertyService {
     };
   }
 
+  propertyInclude() {
+    return this.defaultInclude();
+  }
+
   private defaultInclude() {
     return {
       category: {
-        select: { id: true, name: true, slug: true, parentId: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          parentId: true,
+          parent: { select: { id: true, name: true, slug: true } },
+        },
       },
       images: { orderBy: { order: 'asc' as const } },
     };
+  }
+
+  private resolveSubcategoryId(dto: {
+    subcategoryId?: string;
+    categoryId?: string;
+  }): string | undefined {
+    return dto.subcategoryId ?? dto.categoryId;
   }
 
   private toCreateData(ownerId: string, dto: CreatePropertyDto): Prisma.PropertyCreateInput {
@@ -598,7 +655,7 @@ export class PropertyService {
       pricePeriod:
         dto.purpose === PropertyPurpose.RENT ? dto.pricePeriod : null,
       status: PropertyStatus.DRAFT,
-      category: { connect: { id: dto.categoryId } },
+      category: { connect: { id: dto.subcategoryId } },
       owner: { connect: { id: ownerId } },
     };
   }
@@ -627,8 +684,8 @@ export class PropertyService {
       ...(dto.purpose !== undefined ? { purpose: dto.purpose } : {}),
       ...(dto.pricePeriod !== undefined ? { pricePeriod: dto.pricePeriod } : {}),
       ...(dto.purpose === PropertyPurpose.SALE ? { pricePeriod: null } : {}),
-      ...(dto.categoryId !== undefined
-        ? { category: { connect: { id: dto.categoryId } } }
+      ...(this.resolveSubcategoryId(dto) !== undefined
+        ? { category: { connect: { id: this.resolveSubcategoryId(dto) } } }
         : {}),
     };
   }

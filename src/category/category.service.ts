@@ -48,6 +48,96 @@ export class CategoryService {
     return this.findMainCategories(query);
   }
 
+  async findSelectMenu(options: { activeOnly: boolean }) {
+    const mains = await this.prisma.category.findMany({
+      where: {
+        parentId: null,
+        ...(options.activeOnly ? { isActive: true } : {}),
+      },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        children: {
+          where: options.activeOnly ? { isActive: true } : undefined,
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
+    return {
+      items: mains.map((main) => ({
+        id: main.id,
+        name: main.name,
+        slug: main.slug,
+        description: main.description,
+        sortOrder: main.sortOrder,
+        isActive: main.isActive,
+        subcategories: main.children.map((sub) => ({
+          id: sub.id,
+          name: sub.name,
+          slug: sub.slug,
+          description: sub.description,
+          parentId: sub.parentId,
+          sortOrder: sub.sortOrder,
+          isActive: sub.isActive,
+        })),
+      })),
+    };
+  }
+
+  async findSubcategorySelectMenu(options: {
+    parentId?: string;
+    activeOnly: boolean;
+    isActive?: boolean;
+  }) {
+    if (options.parentId) {
+      await this.assertMainCategory(options.parentId);
+    }
+
+    const where: Prisma.CategoryWhereInput = {
+      parentId: options.parentId ?? { not: null },
+      ...(options.isActive !== undefined ? { isActive: options.isActive } : {}),
+      ...(options.activeOnly
+        ? { isActive: true, parent: { isActive: true } }
+        : {}),
+    };
+
+    const [items, parent] = await Promise.all([
+      this.prisma.category.findMany({
+        where,
+        orderBy: options.parentId
+          ? { sortOrder: 'asc' }
+          : [{ parent: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
+        include: {
+          parent: { select: { id: true, name: true, slug: true } },
+          _count: options.activeOnly
+            ? undefined
+            : { select: { properties: true } },
+        },
+      }),
+      options.parentId
+        ? this.prisma.category.findUnique({ where: { id: options.parentId } })
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      ...(parent
+        ? {
+            parent: {
+              id: parent.id,
+              name: parent.name,
+              slug: parent.slug,
+              description: parent.description,
+              sortOrder: parent.sortOrder,
+              isActive: parent.isActive,
+            },
+          }
+        : {}),
+      items: items.map((item) =>
+        this.mapSubcategory(item, options.activeOnly),
+      ),
+    };
+  }
+
   async findSubcategories(
     query: QuerySubcategoryDto,
     options: { activeOnly: boolean; isActive?: boolean },
