@@ -4,6 +4,8 @@ Production-grade **Authentication + Authorization (RBAC)** backend for a rental 
 
 Built with **NestJS**, **PostgreSQL**, **Prisma**, **JWT**, **Phone OTP**, and **Google OAuth**.
 
+**دليل العميل (عربي — شرح الدورات بدون تفاصيل تقنية):** [`docs/CLIENT_GUIDE_AR.md`](docs/CLIENT_GUIDE_AR.md)
+
 ---
 
 ## Table of Contents
@@ -274,10 +276,10 @@ ProfileStatus: INCOMPLETE | BASIC_DONE | KYC_PENDING | VERIFIED | REJECTED
 | Owner KYC | `owner.review` | `GET /admin/owners/pending`, approve/reject |
 | Properties | `property.review` | `GET /admin/properties/pending/list`, approve/reject |
 | Properties | `property.read` | `GET /admin/properties` |
-| Categories | `category.read` | `GET /admin/categories`, `GET /admin/categories/:id` |
-| Categories | `category.create` | `POST /admin/categories` |
-| Categories | `category.update` | `PATCH /admin/categories/:id` |
-| Categories | `category.delete` | `DELETE /admin/categories/:id` |
+| Categories | `category.read` | `GET /admin/categories`, `GET /admin/categories/:parentId/subcategories`, `GET /admin/subcategories/:id` |
+| Categories | `category.create` | `POST /admin/categories`, `POST /admin/categories/:parentId/subcategories` |
+| Categories | `category.update` | `PATCH /admin/categories/:id`, `PATCH /admin/subcategories/:id` |
+| Categories | `category.delete` | `DELETE /admin/categories/:id`, `DELETE /admin/subcategories/:id` |
 
 ### Decorators
 
@@ -949,6 +951,11 @@ curl -X POST http://localhost:3000/owner/profile/complete \
 | POST | `/admin/categories` | JWT | ADMIN + `category.create` |
 | PATCH | `/admin/categories/:id` | JWT | ADMIN + `category.update` |
 | DELETE | `/admin/categories/:id` | JWT | ADMIN + `category.delete` |
+| GET | `/admin/categories/:parentId/subcategories` | JWT | ADMIN + `category.read` |
+| POST | `/admin/categories/:parentId/subcategories` | JWT | ADMIN + `category.create` |
+| GET | `/admin/subcategories/:id` | JWT | ADMIN + `category.read` |
+| PATCH | `/admin/subcategories/:id` | JWT | ADMIN + `category.update` |
+| DELETE | `/admin/subcategories/:id` | JWT | ADMIN + `category.delete` |
 | GET | `/admin/properties` | JWT | ADMIN + `property.read` |
 | GET | `/admin/properties/pending/list` | JWT | `property.review` |
 | PATCH | `/admin/properties/:id/approve` | JWT | `property.review` |

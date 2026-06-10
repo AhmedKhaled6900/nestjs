@@ -12,6 +12,7 @@ import {
 } from '../common/dto/pagination.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import { CreateSubcategoryDto, UpdateSubcategoryDto } from './dto/subcategory.dto';
 import { QueryAdminCategoryDto } from './dto/query-admin-category.dto';
 
 @Injectable()
@@ -70,7 +71,7 @@ export class CategoryService {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     if (query.parentId) {
-      return this.adminFindSubcategories(query.parentId, query, page, limit, skip);
+      return this.adminFindSubcategories(query.parentId, query);
     }
 
     const where: Prisma.CategoryWhereInput = {
@@ -120,6 +121,35 @@ export class CategoryService {
     }
 
     return this.mapAdminCategory(category);
+  }
+
+  async adminFindSubcategories(parentId: string, query: QueryAdminCategoryDto) {
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
+    return this.listSubcategoriesPaginated(parentId, query, page, limit, skip);
+  }
+
+  async adminCreateSubcategory(parentId: string, dto: CreateSubcategoryDto) {
+    return this.adminCreate({
+      ...dto,
+      parentId,
+    });
+  }
+
+  async adminFindSubcategoryById(id: string) {
+    const category = await this.assertSubcategoryOrFail(id);
+    return this.mapAdminCategory(category);
+  }
+
+  async adminUpdateSubcategory(id: string, dto: UpdateSubcategoryDto) {
+    await this.assertSubcategoryOrFail(id);
+    const result = await this.adminUpdate(id, dto);
+    return { ...result, message: 'Subcategory updated successfully' };
+  }
+
+  async adminRemoveSubcategory(id: string) {
+    await this.assertSubcategoryOrFail(id);
+    const result = await this.adminRemove(id);
+    return { message: 'Subcategory deleted successfully' };
   }
 
   async adminCreate(dto: CreateCategoryDto) {
@@ -228,7 +258,7 @@ export class CategoryService {
     }
   }
 
-  private async adminFindSubcategories(
+  private async listSubcategoriesPaginated(
     parentId: string,
     query: QueryAdminCategoryDto,
     page: number,
@@ -259,6 +289,29 @@ export class CategoryService {
       page,
       limit,
     );
+  }
+
+  private async assertSubcategoryOrFail(id: string) {
+    const category = await this.prisma.category.findUnique({
+      where: { id },
+      include: {
+        parent: true,
+        children: { orderBy: { sortOrder: 'asc' } },
+        _count: { select: { properties: true, children: true } },
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Subcategory not found');
+    }
+
+    if (!category.parentId) {
+      throw new BadRequestException(
+        'This endpoint is for subcategories only. Use /admin/categories for main categories.',
+      );
+    }
+
+    return category;
   }
 
   private async findCategoryOrFail(id: string) {
@@ -378,6 +431,7 @@ export class CategoryService {
       slug: category.slug,
       description: category.description,
       parentId: category.parentId,
+      isSubcategory: category.parentId !== null,
       isActive: category.isActive,
       sortOrder: category.sortOrder,
       createdAt: category.createdAt,

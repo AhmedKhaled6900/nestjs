@@ -112,7 +112,10 @@ __decorate([
     (0, common_1.Post)(),
     (0, permissions_decorator_1.RequirePermissions)('property.create'),
     (0, swagger_1.ApiBearerAuth)('access-token'),
-    (0, swagger_1.ApiOperation)({ summary: 'Create property as DRAFT (verified owner)' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Create property as DRAFT (verified owner or admin)',
+        description: 'Owners need verified email + approved KYC. Admins can create without KYC; property is owned by the admin account.',
+    }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Property created' }),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),

@@ -92,7 +92,11 @@ export class PropertyController {
   @Post()
   @RequirePermissions('property.create')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Create property as DRAFT (verified owner)' })
+  @ApiOperation({
+    summary: 'Create property as DRAFT (verified owner or admin)',
+    description:
+      'Owners need verified email + approved KYC. Admins can create without KYC; property is owned by the admin account.',
+  })
   @ApiResponse({ status: 201, description: 'Property created' })
   create(@CurrentUser() user: AuthUser, @Body() dto: CreatePropertyDto) {
     return this.propertyService.create(user.id, dto);

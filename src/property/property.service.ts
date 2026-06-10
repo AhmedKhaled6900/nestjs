@@ -42,7 +42,7 @@ export class PropertyService {
   ) {}
 
   async create(ownerId: string, dto: CreatePropertyDto) {
-    await this.assertVerifiedOwner(ownerId);
+    await this.assertCanManageProperties(ownerId);
     await this.categoryService.assertLeafCategory(dto.categoryId);
 
     const property = await this.prisma.property.create({
@@ -384,13 +384,21 @@ export class PropertyService {
     };
   }
 
-  private async assertVerifiedOwner(userId: string): Promise<void> {
+  private async assertCanManageProperties(userId: string): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { role: true, ownerProfile: true },
     });
 
-    if (!user || user.role.name !== RoleName.OWNER) {
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (user.role.name === RoleName.ADMIN) {
+      return;
+    }
+
+    if (user.role.name !== RoleName.OWNER) {
       throw new ForbiddenException('Only verified owners can manage properties');
     }
 
