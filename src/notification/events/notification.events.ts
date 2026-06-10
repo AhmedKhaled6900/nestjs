@@ -6,6 +6,8 @@ export const NOTIFICATION_EVENTS = {
   OWNER_PROFILE_SUBMITTED: 'notification.owner.profile_submitted',
   OWNER_KYC_APPROVED: 'notification.owner.kyc_approved',
   OWNER_KYC_REJECTED: 'notification.owner.kyc_rejected',
+  PROPERTY_APPROVED: 'notification.property.approved',
+  PROPERTY_REJECTED: 'notification.property.rejected',
 } as const;
 
 export type UserRegisteredEvent = {
@@ -40,5 +42,18 @@ export type OwnerKycApprovedEvent = {
 export type OwnerKycRejectedEvent = {
   ownerUserId: string;
   ownerName: string;
+  reason: string;
+};
+
+export type PropertyApprovedEvent = {
+  ownerUserId: string;
+  propertyId: string;
+  propertyTitle: string;
+};
+
+export type PropertyRejectedEvent = {
+  ownerUserId: string;
+  propertyId: string;
+  propertyTitle: string;
   reason: string;
 };

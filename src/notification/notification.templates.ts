@@ -2,6 +2,8 @@ import {
   OwnerKycApprovedEvent,
   OwnerKycRejectedEvent,
   OwnerProfileSubmittedEvent,
+  PropertyApprovedEvent,
+  PropertyRejectedEvent,
   UserEmailVerifiedEvent,
   UserRegisteredEvent,
 } from './events/notification.events';
@@ -53,5 +55,23 @@ export function buildOwnerKycRejectedNotification(
   return {
     title: 'تم رفض طلبك',
     body: `رفض المسؤول ملفك. السبب: ${payload.reason}`,
+  };
+}
+
+export function buildPropertyApprovedNotification(
+  payload: PropertyApprovedEvent,
+): NotificationContent {
+  return {
+    title: 'تمت الموافقة على عقارك',
+    body: `وافق المسؤول على عقارك «${payload.propertyTitle}» وهو الآن منشور على المنصة.`,
+  };
+}
+
+export function buildPropertyRejectedNotification(
+  payload: PropertyRejectedEvent,
+): NotificationContent {
+  return {
+    title: 'تم رفض عقارك',
+    body: `رفض المسؤول عقارك «${payload.propertyTitle}». السبب: ${payload.reason}`,
   };
 }

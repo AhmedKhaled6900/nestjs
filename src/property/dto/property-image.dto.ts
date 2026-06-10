@@ -48,3 +48,12 @@ export class RejectPropertyDto {
   @IsNotEmpty()
   reason!: string;
 }
+
+export class UploadPropertyVideoDto {
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Optional property video (MP4/WebM/MOV, max 50 MB)',
+  })
+  video!: unknown;
+}

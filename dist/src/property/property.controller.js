@@ -16,6 +16,7 @@ exports.PropertyController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const platform_express_1 = require("@nestjs/platform-express");
+const platform_express_2 = require("@nestjs/platform-express");
 const multer_1 = require("multer");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const permissions_decorator_1 = require("../auth/decorators/permissions.decorator");
@@ -29,6 +30,10 @@ const property_service_1 = require("./property.service");
 const propertyImagesInterceptor = (0, platform_express_1.FilesInterceptor)('images', upload_constants_1.MAX_PROPERTY_IMAGES, {
     storage: (0, multer_1.memoryStorage)(),
     limits: { fileSize: upload_constants_1.MAX_PROPERTY_IMAGE_SIZE_BYTES },
+});
+const propertyVideoInterceptor = (0, platform_express_2.FileInterceptor)('video', {
+    storage: (0, multer_1.memoryStorage)(),
+    limits: { fileSize: upload_constants_1.MAX_PROPERTY_VIDEO_SIZE_BYTES },
 });
 let PropertyController = class PropertyController {
     constructor(propertyService, propertyImageService) {
@@ -55,6 +60,12 @@ let PropertyController = class PropertyController {
     }
     uploadImages(id, user, files, dto) {
         return this.propertyImageService.uploadImages(id, user.id, files ?? [], dto.primaryIndex ?? 0);
+    }
+    uploadVideo(id, user, file) {
+        return this.propertyService.uploadVideo(id, user.id, file);
+    }
+    removeVideo(id, user) {
+        return this.propertyService.removeVideo(id, user.id);
     }
     updateImage(id, imageId, user, dto) {
         return this.propertyImageService.updateImage(id, imageId, user.id, dto);
@@ -162,6 +173,35 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Array, property_image_dto_1.UploadPropertyImagesDto]),
     __metadata("design:returntype", void 0)
 ], PropertyController.prototype, "uploadImages", null);
+__decorate([
+    (0, common_1.Post)(':id/video'),
+    (0, permissions_decorator_1.RequirePermissions)('property.update'),
+    (0, swagger_1.ApiBearerAuth)('access-token'),
+    (0, common_1.UseInterceptors)(propertyVideoInterceptor),
+    (0, swagger_1.ApiConsumes)('multipart/form-data'),
+    (0, swagger_1.ApiBody)({ type: property_image_dto_1.UploadPropertyVideoDto }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Upload optional property video (DRAFT or REJECTED only)',
+        description: 'Replaces existing video if one is already uploaded. MP4, WebM, or MOV — max 50 MB.',
+    }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], PropertyController.prototype, "uploadVideo", null);
+__decorate([
+    (0, common_1.Delete)(':id/video'),
+    (0, permissions_decorator_1.RequirePermissions)('property.update'),
+    (0, swagger_1.ApiBearerAuth)('access-token'),
+    (0, swagger_1.ApiOperation)({ summary: 'Remove property video' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], PropertyController.prototype, "removeVideo", null);
 __decorate([
     (0, common_1.Patch)(':id/images/:imageId'),
     (0, permissions_decorator_1.RequirePermissions)('property.update'),

@@ -42,6 +42,7 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
         images: {
@@ -86,6 +87,7 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
         images: {
@@ -130,6 +132,7 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
         images: {
@@ -174,6 +177,7 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
         images: {
@@ -218,6 +222,7 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
         images: {
@@ -273,6 +278,103 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            videoUrl: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    }>;
+    uploadVideo(id: string, user: AuthUser, file: Express.Multer.File): Promise<{
+        message: string;
+        property: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            videoUrl: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    }>;
+    removeVideo(id: string, user: AuthUser): Promise<{
+        message: string;
+        property: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
             images: {
@@ -332,6 +434,7 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
             images: {
@@ -379,6 +482,7 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
             images: {
@@ -426,6 +530,7 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
             images: {

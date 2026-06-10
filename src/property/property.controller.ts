@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -20,6 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OptionalAuth, Public, RequirePermissions } from '../auth/decorators/permissions.decorator';
@@ -27,12 +29,14 @@ import { AuthUser } from '../auth/interfaces/auth.interface';
 import {
   MAX_PROPERTY_IMAGE_SIZE_BYTES,
   MAX_PROPERTY_IMAGES,
+  MAX_PROPERTY_VIDEO_SIZE_BYTES,
 } from '../upload/upload.constants';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import {
   RejectPropertyDto,
   UpdatePropertyImageDto,
   UploadPropertyImagesDto,
+  UploadPropertyVideoDto,
 } from './dto/property-image.dto';
 import { QueryOwnerPropertyDto, QueryPropertyDto } from './dto/query-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -42,6 +46,11 @@ import { PropertyService } from './property.service';
 const propertyImagesInterceptor = FilesInterceptor('images', MAX_PROPERTY_IMAGES, {
   storage: memoryStorage(),
   limits: { fileSize: MAX_PROPERTY_IMAGE_SIZE_BYTES },
+});
+
+const propertyVideoInterceptor = FileInterceptor('video', {
+  storage: memoryStorage(),
+  limits: { fileSize: MAX_PROPERTY_VIDEO_SIZE_BYTES },
 });
 
 @ApiTags('Properties')
@@ -141,6 +150,32 @@ export class PropertyController {
       files ?? [],
       dto.primaryIndex ?? 0,
     );
+  }
+
+  @Post(':id/video')
+  @RequirePermissions('property.update')
+  @ApiBearerAuth('access-token')
+  @UseInterceptors(propertyVideoInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UploadPropertyVideoDto })
+  @ApiOperation({
+    summary: 'Upload optional property video (DRAFT or REJECTED only)',
+    description: 'Replaces existing video if one is already uploaded. MP4, WebM, or MOV — max 50 MB.',
+  })
+  uploadVideo(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.propertyService.uploadVideo(id, user.id, file);
+  }
+
+  @Delete(':id/video')
+  @RequirePermissions('property.update')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Remove property video' })
+  removeVideo(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.propertyService.removeVideo(id, user.id);
   }
 
   @Patch(':id/images/:imageId')

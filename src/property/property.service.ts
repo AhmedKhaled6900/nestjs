@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Prisma,
   ProfileStatus,
@@ -20,6 +21,7 @@ import {
   resolvePagination,
 } from '../common/dto/pagination.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { NOTIFICATION_EVENTS } from '../notification/events/notification.events';
 import { MAX_PROPERTY_IMAGES } from '../upload/upload.constants';
 import { UploadService } from '../upload/upload.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
@@ -39,6 +41,7 @@ export class PropertyService {
     private readonly categoryService: CategoryService,
     private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(ownerId: string, dto: CreatePropertyDto) {
@@ -159,9 +162,61 @@ export class PropertyService {
       await this.uploadService.deleteLocalFile(image.imageUrl);
     }
 
+    await this.uploadService.deleteLocalFile(property.videoUrl);
+
     await this.prisma.property.delete({ where: { id: property.id } });
 
     return { message: 'Property deleted successfully' };
+  }
+
+  async uploadVideo(
+    propertyId: string,
+    ownerId: string,
+    file: Express.Multer.File,
+  ) {
+    const property = await this.findOwnedEditableProperty(propertyId, ownerId);
+
+    if (!file) {
+      throw new BadRequestException('video file is required');
+    }
+
+    if (property.videoUrl) {
+      await this.uploadService.deleteLocalFile(property.videoUrl);
+    }
+
+    const videoUrl = await this.uploadService.savePropertyVideo(file, property.id);
+
+    const updated = await this.prisma.property.update({
+      where: { id: property.id },
+      data: { videoUrl },
+      include: this.defaultInclude(),
+    });
+
+    return {
+      message: 'Property video uploaded successfully',
+      property: this.mapProperty(updated),
+    };
+  }
+
+  async removeVideo(propertyId: string, ownerId: string) {
+    const property = await this.findOwnedEditableProperty(propertyId, ownerId);
+
+    if (!property.videoUrl) {
+      throw new NotFoundException('Property has no video');
+    }
+
+    await this.uploadService.deleteLocalFile(property.videoUrl);
+
+    const updated = await this.prisma.property.update({
+      where: { id: property.id },
+      data: { videoUrl: null },
+      include: this.defaultInclude(),
+    });
+
+    return {
+      message: 'Property video removed successfully',
+      property: this.mapProperty(updated),
+    };
   }
 
   async submitForReview(propertyId: string, ownerId: string) {
@@ -280,6 +335,12 @@ export class PropertyService {
       include: this.defaultInclude(),
     });
 
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.PROPERTY_APPROVED, {
+      ownerUserId: property.ownerId,
+      propertyId: property.id,
+      propertyTitle: property.title,
+    });
+
     return {
       message: 'Property approved',
       property: this.mapProperty(updated),
@@ -300,6 +361,13 @@ export class PropertyService {
         rejectionReason: reason,
       },
       include: this.defaultInclude(),
+    });
+
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.PROPERTY_REJECTED, {
+      ownerUserId: property.ownerId,
+      propertyId: property.id,
+      propertyTitle: property.title,
+      reason,
     });
 
     return {
@@ -369,6 +437,9 @@ export class PropertyService {
       ownerId: property.ownerId,
       owner: property.owner ?? undefined,
       rejectionReason: property.rejectionReason,
+      videoUrl: property.videoUrl
+        ? this.uploadService.toPublicUrl(property.videoUrl, appUrl)
+        : null,
       submittedAt: property.submittedAt,
       approvedAt: property.approvedAt,
       images: property.images

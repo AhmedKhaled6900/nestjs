@@ -6,6 +6,8 @@ import {
   OwnerKycApprovedEvent,
   OwnerKycRejectedEvent,
   OwnerProfileSubmittedEvent,
+  PropertyApprovedEvent,
+  PropertyRejectedEvent,
   UserEmailVerifiedEvent,
   UserRegisteredEvent,
 } from '../events/notification.events';
@@ -13,6 +15,8 @@ import {
   buildOwnerKycApprovedNotification,
   buildOwnerKycRejectedNotification,
   buildOwnerProfileSubmittedNotification,
+  buildPropertyApprovedNotification,
+  buildPropertyRejectedNotification,
   buildUserEmailVerifiedNotification,
   buildUserRegisteredNotification,
 } from '../notification.templates';
@@ -96,6 +100,41 @@ export class NotificationListener {
       body: content.body,
       data: {
         ownerUserId: payload.ownerUserId,
+        reason: payload.reason,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PROPERTY_APPROVED, { async: true })
+  async handlePropertyApproved(payload: PropertyApprovedEvent) {
+    const content = buildPropertyApprovedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.ownerUserId,
+      type: NotificationType.PROPERTY_APPROVED,
+      title: content.title,
+      body: content.body,
+      data: {
+        propertyId: payload.propertyId,
+        propertyTitle: payload.propertyTitle,
+        action: 'APPROVED',
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PROPERTY_REJECTED, { async: true })
+  async handlePropertyRejected(payload: PropertyRejectedEvent) {
+    const content = buildPropertyRejectedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.ownerUserId,
+      type: NotificationType.PROPERTY_REJECTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        propertyId: payload.propertyId,
+        propertyTitle: payload.propertyTitle,
+        action: 'REJECTED',
         reason: payload.reason,
       },
     });

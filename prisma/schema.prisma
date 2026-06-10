@@ -188,6 +188,7 @@ model Property {
   categoryId      String
   ownerId         String
   rejectionReason String?
+  videoUrl        String?
   submittedAt     DateTime?
   approvedAt      DateTime?
   createdAt       DateTime        @default(now())
@@ -229,6 +230,8 @@ enum NotificationType {
   OWNER_PROFILE_SUBMITTED
   OWNER_KYC_APPROVED
   OWNER_KYC_REJECTED
+  PROPERTY_APPROVED
+  PROPERTY_REJECTED
 }
 
 model Notification {

@@ -5,9 +5,11 @@ import { mkdir, unlink, writeFile } from 'fs/promises';
 import { extname, join } from 'path';
 import {
   ALLOWED_IMAGE_MIMES,
+  ALLOWED_VIDEO_MIMES,
   KYC_UPLOAD_SUBDIR,
   MAX_KYC_IMAGE_SIZE_BYTES,
   MAX_PROPERTY_IMAGE_SIZE_BYTES,
+  MAX_PROPERTY_VIDEO_SIZE_BYTES,
   PROPERTY_UPLOAD_SUBDIR,
 } from './upload.constants';
 
@@ -42,6 +44,23 @@ export class UploadService {
     const extension = this.resolveExtension(file);
     const directory = join(this.uploadRoot, PROPERTY_UPLOAD_SUBDIR, propertyId);
     const filename = `${randomUUID()}${extension}`;
+    const absolutePath = join(directory, filename);
+
+    await mkdir(directory, { recursive: true });
+    await writeFile(absolutePath, file.buffer);
+
+    return `/uploads/${PROPERTY_UPLOAD_SUBDIR}/${propertyId}/${filename}`;
+  }
+
+  async savePropertyVideo(
+    file: Express.Multer.File,
+    propertyId: string,
+  ): Promise<string> {
+    this.validateVideo(file);
+
+    const extension = this.resolveVideoExtension(file);
+    const directory = join(this.uploadRoot, PROPERTY_UPLOAD_SUBDIR, propertyId);
+    const filename = `video-${randomUUID()}${extension}`;
     const absolutePath = join(directory, filename);
 
     await mkdir(directory, { recursive: true });
@@ -105,6 +124,43 @@ export class UploadService {
       throw new BadRequestException(
         `${fieldName} must be a JPEG, PNG, or WebP image`,
       );
+    }
+  }
+
+  private validateVideo(file: Express.Multer.File): void {
+    if (!file) {
+      throw new BadRequestException('video file is required');
+    }
+
+    if (file.size > MAX_PROPERTY_VIDEO_SIZE_BYTES) {
+      const maxMb = Math.round(MAX_PROPERTY_VIDEO_SIZE_BYTES / (1024 * 1024));
+      throw new BadRequestException(`video must be ${maxMb} MB or smaller`);
+    }
+
+    if (
+      !ALLOWED_VIDEO_MIMES.includes(
+        file.mimetype as (typeof ALLOWED_VIDEO_MIMES)[number],
+      )
+    ) {
+      throw new BadRequestException('video must be MP4, WebM, or MOV');
+    }
+  }
+
+  private resolveVideoExtension(file: Express.Multer.File): string {
+    const fromName = extname(file.originalname).toLowerCase();
+    if (['.mp4', '.webm', '.mov'].includes(fromName)) {
+      return fromName;
+    }
+
+    switch (file.mimetype) {
+      case 'video/mp4':
+        return '.mp4';
+      case 'video/webm':
+        return '.webm';
+      case 'video/quicktime':
+        return '.mov';
+      default:
+        return '.mp4';
     }
   }
 
