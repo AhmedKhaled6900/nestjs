@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { IS_PUBLIC_KEY } from '../decorators/permissions.decorator';
+import { IS_PUBLIC_KEY, OPTIONAL_AUTH_KEY } from '../decorators/permissions.decorator';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -19,15 +19,40 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getHandler(),
       context.getClass(),
     ]);
+    const isOptionalAuth = this.reflector.getAllAndOverride<boolean>(
+      OPTIONAL_AUTH_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
-    if (isPublic) {
+    if (isPublic && !isOptionalAuth) {
       return true;
+    }
+
+    if (isOptionalAuth) {
+      const request = context.switchToHttp().getRequest<{ headers: { authorization?: string } }>();
+      if (!request.headers?.authorization?.startsWith('Bearer ')) {
+        return true;
+      }
     }
 
     return super.canActivate(context);
   }
 
-  handleRequest<T>(err: Error | null, user: T): T {
+  handleRequest<T>(
+    err: Error | null,
+    user: T,
+    _info: unknown,
+    context: ExecutionContext,
+  ): T {
+    const isOptionalAuth = this.reflector.getAllAndOverride<boolean>(
+      OPTIONAL_AUTH_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (isOptionalAuth && (err || !user)) {
+      return undefined as T;
+    }
+
     if (err || !user) {
       throw err ?? new UnauthorizedException('Authentication required');
     }

@@ -1,17 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PropertyPurpose, PropertyStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
 import {
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
   IsUUID,
-  Max,
-  Min,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
-export class QueryPropertyDto {
+export class QueryPropertyDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: PropertyPurpose })
   @IsOptional()
   @IsEnum(PropertyPurpose)
@@ -26,41 +23,11 @@ export class QueryPropertyDto {
   @IsOptional()
   @IsString()
   city?: string;
-
-  @ApiPropertyOptional({ example: 1, default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ example: 20, default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }
 
-export class QueryOwnerPropertyDto {
+export class QueryOwnerPropertyDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: PropertyStatus })
   @IsOptional()
   @IsEnum(PropertyStatus)
   status?: PropertyStatus;
-
-  @ApiPropertyOptional({ example: 1, default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ example: 20, default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }

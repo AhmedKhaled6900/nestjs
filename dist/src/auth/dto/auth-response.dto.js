@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MessageResponseDto = exports.RegisterPendingResponseDto = exports.AuthResponseDto = exports.UserResponseDto = void 0;
+exports.MessageResponseDto = exports.RegisterPendingResponseDto = exports.MeResponseDto = exports.AuthResponseDto = exports.UserResponseDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
 class UserResponseDto {
@@ -69,6 +69,29 @@ __decorate([
     (0, swagger_1.ApiProperty)({ type: UserResponseDto }),
     __metadata("design:type", UserResponseDto)
 ], AuthResponseDto.prototype, "user", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        type: [String],
+        example: ['property.read', 'booking.create'],
+        description: 'Permission actions for the user role (store in localStorage)',
+    }),
+    __metadata("design:type", Array)
+], AuthResponseDto.prototype, "permissions", void 0);
+class MeResponseDto {
+}
+exports.MeResponseDto = MeResponseDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: UserResponseDto }),
+    __metadata("design:type", UserResponseDto)
+], MeResponseDto.prototype, "user", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        type: [String],
+        example: ['property.read', 'booking.create'],
+        description: 'Permission actions for the user role',
+    }),
+    __metadata("design:type", Array)
+], MeResponseDto.prototype, "permissions", void 0);
 class RegisterPendingResponseDto {
 }
 exports.RegisterPendingResponseDto = RegisterPendingResponseDto;

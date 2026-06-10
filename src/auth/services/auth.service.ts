@@ -5,7 +5,9 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuthProvider, OtpPurpose, ProfileStatus, RoleName } from '@prisma/client';
+import { NOTIFICATION_EVENTS } from '../../notification/events/notification.events';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ForgotPasswordDto,
@@ -20,6 +22,7 @@ import { VerifyPhoneOtpDto } from '../dto/phone-auth.dto';
 import { EmailService } from '../email/email.service';
 import {
   AuthResponse,
+  MeResponse,
   RegisterPendingResponse,
 } from '../interfaces/auth.interface';
 import { OtpService } from '../otp/otp.service';
@@ -47,6 +50,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly otpService: OtpService,
     private readonly emailService: EmailService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async register(dto: RegisterDto): Promise<RegisterPendingResponse> {
@@ -98,6 +102,14 @@ export class AuthService {
     });
 
     await this.sendVerificationEmail(user.email!, user.name);
+
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.USER_REGISTERED, {
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role.name as RoleName,
+    });
 
     return {
       message: 'Registration successful. Please verify your email.',
@@ -153,6 +165,13 @@ export class AuthService {
       where: { id: user.id },
       data: { isVerified: true },
       include: { role: true, ownerProfile: true },
+    });
+
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.USER_EMAIL_VERIFIED, {
+      userId: verifiedUser.id,
+      name: verifiedUser.name,
+      email: verifiedUser.email,
+      role: verifiedUser.role.name as RoleName,
     });
 
     return this.buildAuthResponse(verifiedUser);
@@ -301,7 +320,14 @@ export class AuthService {
     const payload = await this.decodeAccessToken(tokens.accessToken);
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: payload.sub },
-      include: { role: true, ownerProfile: true },
+      include: {
+        role: {
+          include: {
+            rolePermissions: { include: { permission: true } },
+          },
+        },
+        ownerProfile: true,
+      },
     });
 
     if (!user.isVerified) {
@@ -314,6 +340,26 @@ export class AuthService {
     return {
       ...tokens,
       user: this.mapUserResponse(user),
+      permissions: this.extractPermissions(user.role),
+    };
+  }
+
+  async getMe(userId: string): Promise<MeResponse> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            rolePermissions: { include: { permission: true } },
+          },
+        },
+        ownerProfile: true,
+      },
+    });
+
+    return {
+      user: this.mapUserResponse(user),
+      permissions: this.extractPermissions(user.role),
     };
   }
 
@@ -326,17 +372,36 @@ export class AuthService {
   }
 
   private async buildAuthResponse(user: UserWithRole): Promise<AuthResponse> {
+    const fullUser = await this.prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: {
+        role: {
+          include: {
+            rolePermissions: { include: { permission: true } },
+          },
+        },
+        ownerProfile: true,
+      },
+    });
+
     const tokens = await this.tokenService.generateTokens({
-      sub: user.id,
-      email: user.email,
-      phone: user.phone,
-      role: user.role.name,
+      sub: fullUser.id,
+      email: fullUser.email,
+      phone: fullUser.phone,
+      role: fullUser.role.name,
     });
 
     return {
       ...tokens,
-      user: this.mapUserResponse(user),
+      user: this.mapUserResponse(fullUser),
+      permissions: this.extractPermissions(fullUser.role),
     };
+  }
+
+  private extractPermissions(role: {
+    rolePermissions: Array<{ permission: { action: string } }>;
+  }): string[] {
+    return role.rolePermissions.map((item) => item.permission.action);
   }
 
   private mapUserResponse(user: UserWithRole) {

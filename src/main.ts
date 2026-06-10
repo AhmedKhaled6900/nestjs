@@ -2,13 +2,23 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
+import { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
+import { buildSwaggerDocument } from './swagger/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
+
+  app.set('etag', false);
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (!req.path.startsWith('/uploads/')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    }
+    next();
+  });
 
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
   const corsOrigin = configService.get<string>('CORS_ORIGIN', '*');
@@ -38,27 +48,7 @@ async function bootstrap() {
   );
 
   if (swaggerEnabled) {
-    const config = new DocumentBuilder()
-      .setTitle('Aqar API')
-      .setDescription(
-        'Rental Property Platform — Authentication, Authorization (RBAC), Properties & Bookings',
-      )
-      .setVersion('1.0')
-      .addBearerAuth(
-        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
-        'access-token',
-      )
-      .addTag('Auth', 'Registration, login, OTP, OAuth, password reset & tokens')
-      .addTag('Categories', 'Property category tree')
-      .addTag('Properties', 'Property listings and images')
-      .addTag('Admin - Properties', 'Admin property review')
-      .addTag('Bookings', 'Booking management (RBAC protected)')
-      .addTag('Health', 'Health check')
-      .addTag('Owner Profile', 'Owner KYC profile completion')
-      .addTag('Admin - Owner Review', 'Admin approve/reject owner profiles')
-      .build();
-
-    const document = SwaggerModule.createDocument(app, config);
+    const document = buildSwaggerDocument(app);
     SwaggerModule.setup('api/docs', app, document, {
       swaggerOptions: {
         persistAuthorization: true,

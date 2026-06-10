@@ -27,9 +27,9 @@ export class AdminPropertyController {
   @Get('pending/list')
   @RequireRoles('ADMIN')
   @RequirePermissions('property.review')
-  @ApiOperation({ summary: 'List properties pending review' })
-  findPending() {
-    return this.propertyService.adminFindPending();
+  @ApiOperation({ summary: 'List properties pending review (paginated)' })
+  findPending(@Query() query: QueryOwnerPropertyDto) {
+    return this.propertyService.adminFindPending(query);
   }
 
   @Patch(':id/approve')

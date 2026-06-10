@@ -85,6 +85,18 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   RESEND_FROM?: string;
+
+  @IsOptional()
+  @IsString()
+  FIREBASE_PROJECT_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  FIREBASE_CLIENT_EMAIL?: string;
+
+  @IsOptional()
+  @IsString()
+  FIREBASE_PRIVATE_KEY?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

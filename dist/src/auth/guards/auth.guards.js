@@ -24,12 +24,23 @@ let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
             context.getHandler(),
             context.getClass(),
         ]);
-        if (isPublic) {
+        const isOptionalAuth = this.reflector.getAllAndOverride(permissions_decorator_1.OPTIONAL_AUTH_KEY, [context.getHandler(), context.getClass()]);
+        if (isPublic && !isOptionalAuth) {
             return true;
+        }
+        if (isOptionalAuth) {
+            const request = context.switchToHttp().getRequest();
+            if (!request.headers?.authorization?.startsWith('Bearer ')) {
+                return true;
+            }
         }
         return super.canActivate(context);
     }
-    handleRequest(err, user) {
+    handleRequest(err, user, _info, context) {
+        const isOptionalAuth = this.reflector.getAllAndOverride(permissions_decorator_1.OPTIONAL_AUTH_KEY, [context.getHandler(), context.getClass()]);
+        if (isOptionalAuth && (err || !user)) {
+            return undefined;
+        }
         if (err || !user) {
             throw err ?? new common_1.UnauthorizedException('Authentication required');
         }

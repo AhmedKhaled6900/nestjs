@@ -5,13 +5,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OwnerType, ProfileStatus, RoleName } from '@prisma/client';
+import {
+  buildPaginatedResult,
+  PaginationQueryDto,
+  resolvePagination,
+} from '../common/dto/pagination.dto';
+import { NOTIFICATION_EVENTS } from '../notification/events/notification.events';
 import { PrismaService } from '../prisma/prisma.service';
-import { UploadService } from '../upload/upload.service';
 import {
   CompleteOwnerProfileDto,
   KycUploadedFiles,
 } from './dto/owner-profile.dto';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class OwnerProfileService {
@@ -19,6 +26,7 @@ export class OwnerProfileService {
     private readonly prisma: PrismaService,
     private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async getMyProfile(userId: string) {
@@ -97,27 +105,66 @@ export class OwnerProfileService {
       },
     });
 
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.OWNER_PROFILE_SUBMITTED, {
+      ownerUserId: user.id,
+      ownerName: user.name,
+      ownerEmail: user.email,
+      profileId: profile.id,
+      ownerType: profile.ownerType,
+      profileStatus: profile.profileStatus,
+    });
+
     return {
       message: 'Profile submitted for admin review',
       profile: this.mapProfile(profile),
     };
   }
 
-  async listPendingProfiles() {
-    const profiles = await this.prisma.ownerProfile.findMany({
-      where: { profileStatus: ProfileStatus.KYC_PENDING },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, phone: true, createdAt: true },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
+  async listPendingProfiles(query: PaginationQueryDto) {
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
-    return profiles.map((p) => ({
-      ...this.mapProfile(p),
-      user: p.user,
-    }));
+    const where = {
+      OR: [
+        { profileStatus: ProfileStatus.KYC_PENDING },
+        { user: { isVerified: false } },
+      ],
+    };
+
+    const [profiles, total] = await Promise.all([
+      this.prisma.ownerProfile.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              isVerified: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: [{ user: { isVerified: 'asc' } }, { updatedAt: 'desc' }],
+      }),
+      this.prisma.ownerProfile.count({ where }),
+    ]);
+
+    return buildPaginatedResult(
+      profiles.map((profile) => ({
+        ...this.mapProfile(profile),
+        isVerified: profile.user.isVerified,
+        pendingType: !profile.user.isVerified
+          ? 'EMAIL_NOT_VERIFIED'
+          : 'KYC_REVIEW',
+        user: profile.user,
+      })),
+      total,
+      page,
+      limit,
+    );
   }
 
   async approveProfile(userId: string) {
@@ -133,6 +180,12 @@ export class OwnerProfileService {
         profileStatus: ProfileStatus.VERIFIED,
         rejectionReason: null,
       },
+      include: { user: { select: { id: true, name: true } } },
+    });
+
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.OWNER_KYC_APPROVED, {
+      ownerUserId: updated.user.id,
+      ownerName: updated.user.name,
     });
 
     return {
@@ -154,6 +207,13 @@ export class OwnerProfileService {
         profileStatus: ProfileStatus.REJECTED,
         rejectionReason: reason,
       },
+      include: { user: { select: { id: true, name: true } } },
+    });
+
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.OWNER_KYC_REJECTED, {
+      ownerUserId: updated.user.id,
+      ownerName: updated.user.name,
+      reason,
     });
 
     return {

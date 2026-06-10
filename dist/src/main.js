@@ -6,9 +6,17 @@ const config_1 = require("@nestjs/config");
 const swagger_1 = require("@nestjs/swagger");
 const path_1 = require("path");
 const app_module_1 = require("./app.module");
+const swagger_config_1 = require("./swagger/swagger.config");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const configService = app.get(config_1.ConfigService);
+    app.set('etag', false);
+    app.use((req, res, next) => {
+        if (!req.path.startsWith('/uploads/')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        }
+        next();
+    });
     const isProduction = configService.get('NODE_ENV') === 'production';
     const corsOrigin = configService.get('CORS_ORIGIN', '*');
     const swaggerEnabled = configService.get('SWAGGER_ENABLED', isProduction ? 'false' : 'true') ===
@@ -29,21 +37,7 @@ async function bootstrap() {
         transform: true,
     }));
     if (swaggerEnabled) {
-        const config = new swagger_1.DocumentBuilder()
-            .setTitle('Aqar API')
-            .setDescription('Rental Property Platform — Authentication, Authorization (RBAC), Properties & Bookings')
-            .setVersion('1.0')
-            .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' }, 'access-token')
-            .addTag('Auth', 'Registration, login, OTP, OAuth, password reset & tokens')
-            .addTag('Categories', 'Property category tree')
-            .addTag('Properties', 'Property listings and images')
-            .addTag('Admin - Properties', 'Admin property review')
-            .addTag('Bookings', 'Booking management (RBAC protected)')
-            .addTag('Health', 'Health check')
-            .addTag('Owner Profile', 'Owner KYC profile completion')
-            .addTag('Admin - Owner Review', 'Admin approve/reject owner profiles')
-            .build();
-        const document = swagger_1.SwaggerModule.createDocument(app, config);
+        const document = (0, swagger_config_1.buildSwaggerDocument)(app);
         swagger_1.SwaggerModule.setup('api/docs', app, document, {
             swaggerOptions: {
                 persistAuthorization: true,

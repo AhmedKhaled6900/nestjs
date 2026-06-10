@@ -95,9 +95,21 @@ This API provides:
 
 - **Role** = grouping only
 - **Permission** = controls access per action
-- Guards: `JwtAuthGuard`, `PermissionsGuard`, `RolesGuard`
+- **Guards:** `JwtAuthGuard`, `PermissionsGuard`, `RolesGuard`
 
----
+### Firebase Push Notifications
+
+- In-app notification inbox (PostgreSQL) + optional **FCM push**
+- Setup guide: [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md)
+
+### Admin Panel APIs
+
+- **Users:** list customers & owners (`users.read`) with email/profile filters
+- **Owner KYC:** pending queue, approve/reject (`owner.review`)
+- **Properties:** review queue, approve/reject (`property.review`)
+- **Categories:** full CRUD for main categories & subcategories (`category.*`)
+
+--- 
 
 ## Business Rules
 
@@ -224,8 +236,13 @@ ProfileStatus: INCOMPLETE | BASIC_DONE | KYC_PENDING | VERIFIED | REJECTED
 | `property.create` | Create properties |
 | `property.update` | Update properties |
 | `property.delete` | Delete properties |
-| `property.publish` | Publish properties |
+| `property.publish` | Submit properties for admin review |
 | `property.read` | Read properties |
+| `property.review` | Admin: approve/reject property submissions |
+| `category.create` | Admin: create categories & subcategories |
+| `category.update` | Admin: update categories & subcategories |
+| `category.delete` | Admin: delete categories & subcategories |
+| `category.read` | Admin: list all categories (including inactive) |
 | `booking.create` | Create bookings |
 | `booking.cancel` | Cancel bookings |
 | `booking.read` | Read bookings |
@@ -240,10 +257,27 @@ ProfileStatus: INCOMPLETE | BASIC_DONE | KYC_PENDING | VERIFIED | REJECTED
 | users.* | ✅ | ❌ | ❌ |
 | property.create/update/delete/publish | ✅ | ✅ | ❌ |
 | property.read | ✅ | ✅ | ✅ |
+| property.review | ✅ | ❌ | ❌ |
+| category.create/update/delete/read | ✅ | ❌ | ❌ |
 | booking.create/cancel | ✅ | ❌ | ✅ |
 | booking.read | ✅ | ✅ | ✅ |
 | owner.profile.read/update | ✅ | ✅ | ❌ |
 | owner.review | ✅ | ❌ | ❌ |
+
+> **ADMIN** receives every permission in the seed (`PERMISSIONS` array). Re-run `npm run prisma:seed` after adding new permissions so they are upserted and linked to the ADMIN role.
+
+### Admin-only capabilities (by permission)
+
+| Area | Permission | Endpoints |
+|------|------------|-----------|
+| Users | `users.read` | `GET /admin/customers`, `GET /admin/owners` |
+| Owner KYC | `owner.review` | `GET /admin/owners/pending`, approve/reject |
+| Properties | `property.review` | `GET /admin/properties/pending/list`, approve/reject |
+| Properties | `property.read` | `GET /admin/properties` |
+| Categories | `category.read` | `GET /admin/categories`, `GET /admin/categories/:id` |
+| Categories | `category.create` | `POST /admin/categories` |
+| Categories | `category.update` | `PATCH /admin/categories/:id` |
+| Categories | `category.delete` | `DELETE /admin/categories/:id` |
 
 ### Decorators
 
@@ -894,17 +928,38 @@ curl -X POST http://localhost:3000/owner/profile/complete \
 | POST | `/auth/refresh-token` | — | Public |
 | GET | `/health` | — | Public |
 | GET | `/health/ready` | — | Public |
+| GET | `/auth/me` | JWT | Current user + permissions |
+| GET | `/categories` | — | Public category tree |
+| GET | `/categories/:slug` | — | Public category by slug |
+| GET | `/notifications` | JWT | Paginated notification inbox |
+| GET | `/notifications/unread-count` | JWT | Unread count |
+| PATCH | `/notifications/:id/read` | JWT | Mark notification read |
+| PATCH | `/notifications/read-all` | JWT | Mark all read |
+| POST | `/notifications/devices/register` | JWT | Register FCM token |
+| DELETE | `/notifications/devices/:token` | JWT | Remove FCM token |
 | GET | `/owner/profile` | JWT | `owner.profile.read` |
 | POST | `/owner/profile/complete` | JWT | `owner.profile.update` |
+| GET | `/admin/customers` | JWT | ADMIN + `users.read` |
+| GET | `/admin/owners` | JWT | ADMIN + `users.read` |
 | GET | `/admin/owners/pending` | JWT | `owner.review` |
 | PATCH | `/admin/owners/:userId/approve` | JWT | `owner.review` |
 | PATCH | `/admin/owners/:userId/reject` | JWT | `owner.review` |
-| GET | `/properties` | JWT | `property.read` |
+| GET | `/admin/categories` | JWT | ADMIN + `category.read` |
+| GET | `/admin/categories/:id` | JWT | ADMIN + `category.read` |
+| POST | `/admin/categories` | JWT | ADMIN + `category.create` |
+| PATCH | `/admin/categories/:id` | JWT | ADMIN + `category.update` |
+| DELETE | `/admin/categories/:id` | JWT | ADMIN + `category.delete` |
+| GET | `/admin/properties` | JWT | ADMIN + `property.read` |
+| GET | `/admin/properties/pending/list` | JWT | `property.review` |
+| PATCH | `/admin/properties/:id/approve` | JWT | `property.review` |
+| PATCH | `/admin/properties/:id/reject` | JWT | `property.review` |
+| GET | `/properties` | — | Public approved catalog |
+| GET | `/properties/:id` | Optional | Approved; owner/admin see all statuses |
+| GET | `/properties/my/list` | JWT | `property.read` |
 | POST | `/properties` | JWT | `property.create` |
 | PATCH | `/properties/:id` | JWT | `property.update` |
-| POST | `/properties/:id/publish` | JWT | `property.publish` |
+| POST | `/properties/:id/submit` | JWT | `property.publish` |
 | DELETE | `/properties/:id` | JWT | `property.delete` |
-| GET | `/properties/admin/all` | JWT | ADMIN + `property.read` |
 | POST | `/bookings` | JWT | `booking.create` |
 | GET | `/bookings/my` | JWT | `booking.read` |
 | PATCH | `/bookings/:id/cancel` | JWT | `booking.cancel` |
@@ -952,6 +1007,9 @@ http://localhost:3000/api/docs
 | `OTP_RATE_LIMIT_MAX` | No | `3` | Max OTP requests per window |
 | `RESEND_API_KEY` | No | — | [Resend](https://resend.com) API key for verification emails |
 | `RESEND_FROM` | No | `Aqar <onboarding@resend.dev>` | Sender address (`onboarding@resend.dev` for dev only) |
+| `FIREBASE_PROJECT_ID` | No | — | Firebase project ID (FCM push) |
+| `FIREBASE_CLIENT_EMAIL` | No | — | Service account email |
+| `FIREBASE_PRIVATE_KEY` | No | — | Service account private key (quoted, `\n` for newlines) |
 | `SEED_ADMIN` | No | `false` | Create admin on seed |
 | `ADMIN_EMAIL` | If seed | — | Admin email |
 | `ADMIN_PASSWORD` | If seed | — | Admin password (min 12 chars) |

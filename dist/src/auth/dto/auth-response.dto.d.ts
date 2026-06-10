@@ -13,6 +13,11 @@ export declare class AuthResponseDto {
     accessToken: string;
     refreshToken: string;
     user: UserResponseDto;
+    permissions: string[];
+}
+export declare class MeResponseDto {
+    user: UserResponseDto;
+    permissions: string[];
 }
 export declare class RegisterPendingResponseDto {
     message: string;

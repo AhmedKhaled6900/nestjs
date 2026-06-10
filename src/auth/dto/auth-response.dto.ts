@@ -42,6 +42,25 @@ export class AuthResponseDto {
 
   @ApiProperty({ type: UserResponseDto })
   user!: UserResponseDto;
+
+  @ApiProperty({
+    type: [String],
+    example: ['property.read', 'booking.create'],
+    description: 'Permission actions for the user role (store in localStorage)',
+  })
+  permissions!: string[];
+}
+
+export class MeResponseDto {
+  @ApiProperty({ type: UserResponseDto })
+  user!: UserResponseDto;
+
+  @ApiProperty({
+    type: [String],
+    example: ['property.read', 'booking.create'],
+    description: 'Permission actions for the user role',
+  })
+  permissions!: string[];
 }
 
 export class RegisterPendingResponseDto {

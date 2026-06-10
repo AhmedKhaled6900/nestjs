@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -21,6 +22,7 @@ import { memoryStorage } from 'multer';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { AuthUser } from '../auth/interfaces/auth.interface';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { MAX_KYC_IMAGE_SIZE_BYTES } from '../upload/upload.constants';
 import {
   CompleteOwnerProfileDto,
@@ -83,9 +85,14 @@ export class AdminOwnerController {
 
   @Get('pending')
   @RequirePermissions('owner.review')
-  @ApiOperation({ summary: 'List owners pending KYC review' })
-  listPending() {
-    return this.ownerProfileService.listPendingProfiles();
+  @ApiOperation({
+    summary: 'List owners needing admin attention (paginated)',
+    description:
+      'Returns owners with KYC_PENDING or email not verified (isVerified=false). ' +
+      'Use pendingType: KYC_REVIEW | EMAIL_NOT_VERIFIED. Approve/reject only applies to KYC_REVIEW.',
+  })
+  listPending(@Query() query: PaginationQueryDto) {
+    return this.ownerProfileService.listPendingProfiles(query);
   }
 
   @Patch(':userId/approve')

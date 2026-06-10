@@ -1,8 +1,9 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ForgotPasswordDto, LoginDto, RegisterDto, ResendVerificationDto, ResetPasswordDto, VerifyEmailDto, VerifyResetOtpDto } from '../dto/auth.dto';
 import { VerifyPhoneOtpDto } from '../dto/phone-auth.dto';
 import { EmailService } from '../email/email.service';
-import { AuthResponse, RegisterPendingResponse } from '../interfaces/auth.interface';
+import { AuthResponse, MeResponse, RegisterPendingResponse } from '../interfaces/auth.interface';
 import { OtpService } from '../otp/otp.service';
 import { PasswordService } from '../services/password.service';
 import { TokenService } from '../services/token.service';
@@ -12,7 +13,8 @@ export declare class AuthService {
     private readonly tokenService;
     private readonly otpService;
     private readonly emailService;
-    constructor(prisma: PrismaService, passwordService: PasswordService, tokenService: TokenService, otpService: OtpService, emailService: EmailService);
+    private readonly eventEmitter;
+    constructor(prisma: PrismaService, passwordService: PasswordService, tokenService: TokenService, otpService: OtpService, emailService: EmailService, eventEmitter: EventEmitter2);
     register(dto: RegisterDto): Promise<RegisterPendingResponse>;
     login(dto: LoginDto): Promise<AuthResponse>;
     verifyEmail(dto: VerifyEmailDto): Promise<AuthResponse>;
@@ -38,8 +40,10 @@ export declare class AuthService {
         message: string;
     }>;
     refreshToken(refreshToken: string): Promise<AuthResponse>;
+    getMe(userId: string): Promise<MeResponse>;
     private sendVerificationEmail;
     private buildAuthResponse;
+    private extractPermissions;
     private mapUserResponse;
     private resolveTarget;
     private findUserByTarget;

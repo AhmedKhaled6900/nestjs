@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const event_emitter_1 = require("@nestjs/event-emitter");
 const throttler_1 = require("@nestjs/throttler");
 const env_validation_1 = require("./config/env.validation");
 const prisma_module_1 = require("./prisma/prisma.module");
@@ -17,6 +18,8 @@ const property_module_1 = require("./property/property.module");
 const health_module_1 = require("./health/health.module");
 const owner_module_1 = require("./owner/owner.module");
 const category_module_1 = require("./category/category.module");
+const notification_module_1 = require("./notification/notification.module");
+const admin_module_1 = require("./admin/admin.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -27,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 validate: env_validation_1.validate,
             }),
+            event_emitter_1.EventEmitterModule.forRoot(),
             throttler_1.ThrottlerModule.forRoot([
                 {
                     ttl: parseInt(process.env.OTP_RATE_LIMIT_TTL ?? '60', 10) * 1000,
@@ -38,6 +42,8 @@ exports.AppModule = AppModule = __decorate([
             property_module_1.PropertyModule,
             owner_module_1.OwnerModule,
             category_module_1.CategoryModule,
+            notification_module_1.NotificationModule,
+            admin_module_1.AdminModule,
             health_module_1.HealthModule,
         ],
     })

@@ -28,12 +28,15 @@ import {
 } from '../dto/auth.dto';
 import {
   AuthResponseDto,
+  MeResponseDto,
   MessageResponseDto,
   RegisterPendingResponseDto,
 } from '../dto/auth-response.dto';
 import { SendPhoneOtpDto, VerifyPhoneOtpDto } from '../dto/phone-auth.dto';
+import { CurrentUser } from '../decorators/current-user.decorator';
 import { Public } from '../decorators/permissions.decorator';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
+import { AuthUser } from '../interfaces/auth.interface';
 import { AuthService } from '../services/auth.service';
 import { GoogleProfile } from '../strategies/google.strategy';
 
@@ -165,5 +168,18 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid or revoked refresh token' })
   refreshToken(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshToken(dto.refreshToken);
+  }
+
+  @Get('me')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Get current user profile and permissions',
+    description:
+      'Use on app load to restore session. Store `permissions` in localStorage.',
+  })
+  @ApiResponse({ status: 200, type: MeResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getMe(@CurrentUser() user: AuthUser) {
+    return this.authService.getMe(user.id);
   }
 }

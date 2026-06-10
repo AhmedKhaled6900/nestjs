@@ -11,19 +11,22 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
+const event_emitter_1 = require("@nestjs/event-emitter");
 const client_1 = require("@prisma/client");
+const notification_events_1 = require("../../notification/events/notification.events");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const email_service_1 = require("../email/email.service");
 const otp_service_1 = require("../otp/otp.service");
 const password_service_1 = require("../services/password.service");
 const token_service_1 = require("../services/token.service");
 let AuthService = class AuthService {
-    constructor(prisma, passwordService, tokenService, otpService, emailService) {
+    constructor(prisma, passwordService, tokenService, otpService, emailService, eventEmitter) {
         this.prisma = prisma;
         this.passwordService = passwordService;
         this.tokenService = tokenService;
         this.otpService = otpService;
         this.emailService = emailService;
+        this.eventEmitter = eventEmitter;
     }
     async register(dto) {
         if (dto.role === client_1.RoleName.ADMIN) {
@@ -67,6 +70,13 @@ let AuthService = class AuthService {
             include: { role: true, ownerProfile: true },
         });
         await this.sendVerificationEmail(user.email, user.name);
+        this.eventEmitter.emit(notification_events_1.NOTIFICATION_EVENTS.USER_REGISTERED, {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role.name,
+        });
         return {
             message: 'Registration successful. Please verify your email.',
             user: this.mapUserResponse(user),
@@ -110,6 +120,12 @@ let AuthService = class AuthService {
             where: { id: user.id },
             data: { isVerified: true },
             include: { role: true, ownerProfile: true },
+        });
+        this.eventEmitter.emit(notification_events_1.NOTIFICATION_EVENTS.USER_EMAIL_VERIFIED, {
+            userId: verifiedUser.id,
+            name: verifiedUser.name,
+            email: verifiedUser.email,
+            role: verifiedUser.role.name,
         });
         return this.buildAuthResponse(verifiedUser);
     }
@@ -225,7 +241,14 @@ let AuthService = class AuthService {
         const payload = await this.decodeAccessToken(tokens.accessToken);
         const user = await this.prisma.user.findUniqueOrThrow({
             where: { id: payload.sub },
-            include: { role: true, ownerProfile: true },
+            include: {
+                role: {
+                    include: {
+                        rolePermissions: { include: { permission: true } },
+                    },
+                },
+                ownerProfile: true,
+            },
         });
         if (!user.isVerified) {
             throw new common_1.ForbiddenException({
@@ -236,6 +259,24 @@ let AuthService = class AuthService {
         return {
             ...tokens,
             user: this.mapUserResponse(user),
+            permissions: this.extractPermissions(user.role),
+        };
+    }
+    async getMe(userId) {
+        const user = await this.prisma.user.findUniqueOrThrow({
+            where: { id: userId },
+            include: {
+                role: {
+                    include: {
+                        rolePermissions: { include: { permission: true } },
+                    },
+                },
+                ownerProfile: true,
+            },
+        });
+        return {
+            user: this.mapUserResponse(user),
+            permissions: this.extractPermissions(user.role),
         };
     }
     async sendVerificationEmail(email, name) {
@@ -243,16 +284,31 @@ let AuthService = class AuthService {
         await this.emailService.sendVerificationEmail(email, name, code);
     }
     async buildAuthResponse(user) {
+        const fullUser = await this.prisma.user.findUniqueOrThrow({
+            where: { id: user.id },
+            include: {
+                role: {
+                    include: {
+                        rolePermissions: { include: { permission: true } },
+                    },
+                },
+                ownerProfile: true,
+            },
+        });
         const tokens = await this.tokenService.generateTokens({
-            sub: user.id,
-            email: user.email,
-            phone: user.phone,
-            role: user.role.name,
+            sub: fullUser.id,
+            email: fullUser.email,
+            phone: fullUser.phone,
+            role: fullUser.role.name,
         });
         return {
             ...tokens,
-            user: this.mapUserResponse(user),
+            user: this.mapUserResponse(fullUser),
+            permissions: this.extractPermissions(fullUser.role),
         };
+    }
+    extractPermissions(role) {
+        return role.rolePermissions.map((item) => item.permission.action);
     }
     mapUserResponse(user) {
         const isOwner = user.role.name === client_1.RoleName.OWNER;
@@ -312,6 +368,7 @@ exports.AuthService = AuthService = __decorate([
         password_service_1.PasswordService,
         token_service_1.TokenService,
         otp_service_1.OtpService,
-        email_service_1.EmailService])
+        email_service_1.EmailService,
+        event_emitter_1.EventEmitter2])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

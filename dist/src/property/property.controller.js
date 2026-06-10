@@ -41,8 +41,8 @@ let PropertyController = class PropertyController {
     findMine(user, query) {
         return this.propertyService.findMine(user.id, query);
     }
-    findOne(id) {
-        return this.propertyService.findById(id);
+    findOne(id, user) {
+        return this.propertyService.findById(id, user ? { id: user.id, role: user.role } : undefined);
     }
     create(user, dto) {
         return this.propertyService.create(user.id, dto);
@@ -95,12 +95,17 @@ __decorate([
 ], PropertyController.prototype, "findMine", null);
 __decorate([
     (0, permissions_decorator_1.Public)(),
+    (0, permissions_decorator_1.OptionalAuth)(),
     (0, common_1.Get)(':id'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get property details (approved only for public)' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get property details',
+        description: 'Public: APPROVED only. With Bearer token: owner sees own property (any status), admin sees all.',
+    }),
     (0, swagger_1.ApiParam)({ name: 'id', example: 'uuid-here' }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], PropertyController.prototype, "findOne", null);
 __decorate([

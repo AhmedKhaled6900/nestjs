@@ -14,6 +14,10 @@ const PERMISSIONS = [
   { action: 'property.publish', description: 'Submit properties for review' },
   { action: 'property.read', description: 'Read properties' },
   { action: 'property.review', description: 'Review property submissions' },
+  { action: 'category.create', description: 'Create categories' },
+  { action: 'category.update', description: 'Update categories' },
+  { action: 'category.delete', description: 'Delete categories' },
+  { action: 'category.read', description: 'Read all categories (admin)' },
   { action: 'booking.create', description: 'Create bookings' },
   { action: 'booking.cancel', description: 'Cancel bookings' },
   { action: 'booking.read', description: 'Read bookings' },
@@ -168,7 +172,10 @@ async function main() {
   await seedCategories();
   await seedAdmin();
 
-  console.log('Seed completed: roles, permissions, categories, and role-permission mappings.');
+  console.log(
+    'Seed completed: roles, permissions (including category.*), categories, and role-permission mappings.',
+  );
+  console.log('ADMIN role has all permissions:', PERMISSIONS.map((p) => p.action).join(', '));
 }
 
 main()

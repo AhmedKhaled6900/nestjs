@@ -15,6 +15,10 @@ import {
   RoleName,
 } from '@prisma/client';
 import { CategoryService } from '../category/category.service';
+import {
+  buildPaginatedResult,
+  resolvePagination,
+} from '../common/dto/pagination.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MAX_PROPERTY_IMAGES } from '../upload/upload.constants';
 import { UploadService } from '../upload/upload.service';
@@ -50,9 +54,7 @@ export class PropertyService {
   }
 
   async findApproved(query: QueryPropertyDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     const where: Prisma.PropertyWhereInput = {
       status: PropertyStatus.APPROVED,
@@ -72,16 +74,16 @@ export class PropertyService {
       this.prisma.property.count({ where }),
     ]);
 
-    return {
-      items: items.map((item) => this.mapProperty(item)),
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    };
+    return buildPaginatedResult(
+      items.map((item) => this.mapProperty(item)),
+      total,
+      page,
+      limit,
+    );
   }
 
   async findMine(ownerId: string, query: QueryOwnerPropertyDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     const where: Prisma.PropertyWhereInput = {
       ownerId,
@@ -99,10 +101,12 @@ export class PropertyService {
       this.prisma.property.count({ where }),
     ]);
 
-    return {
-      items: items.map((item) => this.mapProperty(item)),
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    };
+    return buildPaginatedResult(
+      items.map((item) => this.mapProperty(item)),
+      total,
+      page,
+      limit,
+    );
   }
 
   async findById(id: string, viewer?: { id: string; role: string }) {
@@ -204,9 +208,7 @@ export class PropertyService {
   }
 
   async adminFindAll(query: QueryOwnerPropertyDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     const where: Prisma.PropertyWhereInput = query.status
       ? { status: query.status }
@@ -226,23 +228,39 @@ export class PropertyService {
       this.prisma.property.count({ where }),
     ]);
 
-    return {
-      items: items.map((item) => this.mapProperty(item)),
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    };
+    return buildPaginatedResult(
+      items.map((item) => this.mapProperty(item)),
+      total,
+      page,
+      limit,
+    );
   }
 
-  async adminFindPending() {
-    const items = await this.prisma.property.findMany({
-      where: { status: PropertyStatus.PENDING },
-      orderBy: { submittedAt: 'asc' },
-      include: {
-        ...this.defaultInclude(),
-        owner: { select: { id: true, name: true, email: true, phone: true } },
-      },
-    });
+  async adminFindPending(query: QueryOwnerPropertyDto) {
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
-    return items.map((item) => this.mapProperty(item));
+    const where = { status: PropertyStatus.PENDING };
+
+    const [items, total] = await Promise.all([
+      this.prisma.property.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { submittedAt: 'asc' },
+        include: {
+          ...this.defaultInclude(),
+          owner: { select: { id: true, name: true, email: true, phone: true } },
+        },
+      }),
+      this.prisma.property.count({ where }),
+    ]);
+
+    return buildPaginatedResult(
+      items.map((item) => this.mapProperty(item)),
+      total,
+      page,
+      limit,
+    );
   }
 
   async adminApprove(propertyId: string) {

@@ -1,5 +1,6 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { Public } from '../auth/decorators/permissions.decorator';
 import { CategoryService } from './category.service';
 
@@ -10,9 +11,9 @@ export class CategoryController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'List category tree (main + subcategories)' })
-  findAll() {
-    return this.categoryService.findAllTree();
+  @ApiOperation({ summary: 'List category tree (paginated main categories + subcategories)' })
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.categoryService.findAllTree(query);
   }
 
   @Public()

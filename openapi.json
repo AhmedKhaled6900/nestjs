@@ -1,0 +1,2037 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "summary": "Register with email, phone & password",
+        "description": "Does not return tokens. Sends verification email. Use POST /auth/verify-email to activate.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterPendingResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "summary": "Login with email & password",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          },
+          "403": {
+            "description": "Email not verified — verification email resent"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "summary": "Verify email with OTP code",
+        "description": "Returns JWT tokens after successful verification",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/resend-verification": {
+      "post": {
+        "operationId": "AuthController_resendVerification",
+        "summary": "Resend email verification code",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendVerificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/phone/send-otp": {
+      "post": {
+        "operationId": "AuthController_sendPhoneOtp",
+        "summary": "Send OTP to phone number",
+        "description": "Rate limited. OTP expires in 5 minutes.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendPhoneOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/phone/verify": {
+      "post": {
+        "operationId": "AuthController_verifyPhoneOtp",
+        "summary": "Verify phone OTP",
+        "description": "Auto-registers or logs in user. No password required.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPhoneOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired OTP"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/google": {
+      "get": {
+        "operationId": "AuthController_googleAuth",
+        "summary": "Initiate Google OAuth login",
+        "description": "Redirects browser to Google consent screen.",
+        "parameters": [],
+        "responses": {
+          "302": {
+            "description": "Redirect to Google"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "operationId": "AuthController_googleCallback",
+        "summary": "Google OAuth callback",
+        "description": "Auto-creates user if not exists, redirects with JWT tokens.",
+        "parameters": [],
+        "responses": {
+          "302": {
+            "description": "Redirect to APP_URL/auth/callback?accessToken=...&refreshToken=..."
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword",
+        "summary": "Request password reset OTP",
+        "description": "Send OTP via email or phone. Rate limited.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/verify-reset-otp": {
+      "post": {
+        "operationId": "AuthController_verifyResetOtp",
+        "summary": "Verify password reset OTP",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyResetOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired OTP"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "summary": "Reset password",
+        "description": "Invalidates all refresh tokens after reset.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid OTP or user not found"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh-token": {
+      "post": {
+        "operationId": "AuthController_refreshToken",
+        "summary": "Refresh access token",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or revoked refresh token"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "AuthController_getMe",
+        "summary": "Get current user profile and permissions",
+        "description": "Use on app load to restore session. Store `permissions` in localStorage.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/properties": {
+      "get": {
+        "operationId": "PropertyController_findApproved",
+        "summary": "List approved properties (public catalog)",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page (max 100)",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "purpose",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SALE",
+                "RENT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Subcategory ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Cairo",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ]
+      },
+      "post": {
+        "operationId": "PropertyController_create",
+        "summary": "Create property as DRAFT (verified owner)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePropertyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Property created"
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/properties/my/list": {
+      "get": {
+        "operationId": "PropertyController_findMine",
+        "summary": "List my properties (owner)",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page (max 100)",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "DRAFT",
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "SOLD",
+                "RENTED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/properties/{id}": {
+      "get": {
+        "operationId": "PropertyController_findOne",
+        "summary": "Get property details",
+        "description": "Public: APPROVED only. With Bearer token: owner sees own property (any status), admin sees all.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "uuid-here",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ]
+      },
+      "patch": {
+        "operationId": "PropertyController_update",
+        "summary": "Update property (DRAFT or REJECTED only)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePropertyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PropertyController_remove",
+        "summary": "Delete property (DRAFT or REJECTED only)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/properties/{id}/images": {
+      "post": {
+        "operationId": "PropertyController_uploadImages",
+        "summary": "Upload property images",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadPropertyImagesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/properties/{id}/images/{imageId}": {
+      "patch": {
+        "operationId": "PropertyController_updateImage",
+        "summary": "Update image order or primary flag",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePropertyImageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PropertyController_removeImage",
+        "summary": "Delete property image",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/properties/{id}/submit": {
+      "post": {
+        "operationId": "PropertyController_submit",
+        "summary": "Submit property for admin review (→ PENDING)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/properties/{id}/mark-sold": {
+      "patch": {
+        "operationId": "PropertyController_markSold",
+        "summary": "Mark approved SALE property as SOLD",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/properties/{id}/mark-rented": {
+      "patch": {
+        "operationId": "PropertyController_markRented",
+        "summary": "Mark approved RENT property as RENTED",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/properties": {
+      "get": {
+        "operationId": "AdminPropertyController_findAll",
+        "summary": "List all properties (all statuses)",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page (max 100)",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "DRAFT",
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "SOLD",
+                "RENTED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/properties/pending/list": {
+      "get": {
+        "operationId": "AdminPropertyController_findPending",
+        "summary": "List properties pending review (paginated)",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page (max 100)",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "DRAFT",
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "SOLD",
+                "RENTED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/properties/{id}/approve": {
+      "patch": {
+        "operationId": "AdminPropertyController_approve",
+        "summary": "Approve property (→ APPROVED)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "uuid-here",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/properties/{id}/reject": {
+      "patch": {
+        "operationId": "AdminPropertyController_reject",
+        "summary": "Reject property (→ REJECTED)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "uuid-here",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectPropertyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Properties"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/bookings": {
+      "post": {
+        "operationId": "BookingController_create",
+        "summary": "Create booking",
+        "description": "Permission: `booking.create` (Customer)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Booking created"
+          }
+        },
+        "tags": [
+          "Bookings"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/bookings/my": {
+      "get": {
+        "operationId": "BookingController_myBookings",
+        "summary": "Get my bookings",
+        "description": "Permission: `booking.read`",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "User bookings list"
+          }
+        },
+        "tags": [
+          "Bookings"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/bookings/{id}/cancel": {
+      "patch": {
+        "operationId": "BookingController_cancel",
+        "summary": "Cancel booking",
+        "description": "Permission: `booking.cancel`",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "uuid-here",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking cancelled"
+          }
+        },
+        "tags": [
+          "Bookings"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/categories": {
+      "get": {
+        "operationId": "CategoryController_findAll",
+        "summary": "List category tree (paginated main categories + subcategories)",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page (max 100)",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Categories"
+        ]
+      }
+    },
+    "/categories/{slug}": {
+      "get": {
+        "operationId": "CategoryController_findBySlug",
+        "summary": "Get category by slug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "apartment",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Categories"
+        ]
+      }
+    },
+    "/owner/profile": {
+      "get": {
+        "operationId": "OwnerProfileController_getMyProfile",
+        "summary": "Get my owner profile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Owner Profile"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/owner/profile/complete": {
+      "post": {
+        "operationId": "OwnerProfileController_completeProfile",
+        "summary": "Complete owner profile (individual or company)",
+        "description": "Submit or update KYC documents as images. Sets profileStatus → KYC_PENDING. Can resubmit while pending or after rejection.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteOwnerProfileMultipartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile submitted"
+          }
+        },
+        "tags": [
+          "Owner Profile"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/owners/pending": {
+      "get": {
+        "operationId": "AdminOwnerController_listPending",
+        "summary": "List owners pending KYC review (paginated)",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page (max 100)",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Owner Review"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/owners/{userId}/approve": {
+      "patch": {
+        "operationId": "AdminOwnerController_approve",
+        "summary": "Approve owner profile",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Owner Review"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/owners/{userId}/reject": {
+      "patch": {
+        "operationId": "AdminOwnerController_reject",
+        "summary": "Reject owner profile",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectOwnerProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin - Owner Review"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Aqar API",
+    "description": "Rental Property Platform — Authentication, Authorization (RBAC), Properties & Bookings",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Registration, login, OTP, OAuth, password reset & tokens"
+    },
+    {
+      "name": "Categories",
+      "description": "Property category tree"
+    },
+    {
+      "name": "Properties",
+      "description": "Property listings and images"
+    },
+    {
+      "name": "Admin - Properties",
+      "description": "Admin property review"
+    },
+    {
+      "name": "Bookings",
+      "description": "Booking management (RBAC protected)"
+    },
+    {
+      "name": "Health",
+      "description": "Health check"
+    },
+    {
+      "name": "Owner Profile",
+      "description": "Owner KYC profile completion"
+    },
+    {
+      "name": "Admin - Owner Review",
+      "description": "Admin approve/reject owner profiles"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "access-token": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Ahmed Ali"
+          },
+          "email": {
+            "type": "string",
+            "example": "ahmed@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201234567890"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123",
+            "minLength": 8
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "CUSTOMER",
+              "OWNER"
+            ],
+            "example": "CUSTOMER",
+            "description": "CUSTOMER or OWNER only"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "password",
+          "role"
+        ]
+      },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-here"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ahmed Ali"
+          },
+          "email": {
+            "type": "object",
+            "example": "ahmed@example.com",
+            "nullable": true
+          },
+          "phone": {
+            "type": "object",
+            "example": "+201234567890",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "OWNER",
+              "CUSTOMER"
+            ],
+            "example": "CUSTOMER"
+          },
+          "isVerified": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether email has been verified"
+          },
+          "isProfileComplete": {
+            "type": "boolean",
+            "description": "True if owner submitted extended profile (not INCOMPLETE)",
+            "example": false
+          },
+          "profileStatus": {
+            "type": "string",
+            "enum": [
+              "INCOMPLETE",
+              "BASIC_DONE",
+              "KYC_PENDING",
+              "VERIFIED",
+              "REJECTED"
+            ],
+            "example": "INCOMPLETE"
+          },
+          "ownerType": {
+            "type": "object",
+            "example": null,
+            "description": "Set after profile completion"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "role",
+          "isVerified"
+        ]
+      },
+      "RegisterPendingResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Registration successful. Please verify your email."
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponseDto"
+          }
+        },
+        "required": [
+          "message",
+          "user"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "AuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "JWT access token (15 min)"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "JWT refresh token (7 days)"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponseDto"
+          },
+          "permissions": {
+            "example": [
+              "property.read",
+              "booking.create"
+            ],
+            "description": "Permission actions for the user role (store in localStorage)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "user",
+          "permissions"
+        ]
+      },
+      "VerifyEmailDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@example.com"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "6-digit code from verification email"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ]
+      },
+      "ResendVerificationDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@example.com"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "MessageResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "OTP sent successfully"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "SendPhoneOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+201234567890"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "VerifyPhoneOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+201234567890"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "6-digit OTP from SMS"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ahmed Ali",
+            "description": "Used when auto-registering a new user"
+          }
+        },
+        "required": [
+          "phone",
+          "code",
+          "name"
+        ]
+      },
+      "ForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@example.com",
+            "description": "Required if phone is not provided"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201234567890",
+            "description": "Required if email is not provided"
+          }
+        }
+      },
+      "VerifyResetOtpDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201234567890"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "6-digit OTP code"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201234567890"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "newPassword123",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "code",
+          "newPassword"
+        ]
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh token from login/register response"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "MeResponseDto": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserResponseDto"
+          },
+          "permissions": {
+            "example": [
+              "property.read",
+              "booking.create"
+            ],
+            "description": "Permission actions for the user role",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "user",
+          "permissions"
+        ]
+      },
+      "CreatePropertyDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Modern 3BR Apartment in Nasr City"
+          },
+          "description": {
+            "type": "string",
+            "example": "Spacious apartment with balcony and parking."
+          },
+          "price": {
+            "type": "number",
+            "example": 2500000
+          },
+          "city": {
+            "type": "string",
+            "example": "Cairo"
+          },
+          "area": {
+            "type": "string",
+            "example": "Nasr City"
+          },
+          "address": {
+            "type": "string",
+            "example": "123 Abbas El Akkad Street"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 30.0626
+          },
+          "longitude": {
+            "type": "number",
+            "example": 31.3219
+          },
+          "bedrooms": {
+            "type": "number",
+            "example": 3
+          },
+          "bathrooms": {
+            "type": "number",
+            "example": 2
+          },
+          "areaSize": {
+            "type": "number",
+            "example": 180,
+            "description": "Area in square meters"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "SALE",
+              "RENT"
+            ],
+            "example": "SALE"
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "uuid-of-subcategory",
+            "description": "Leaf subcategory ID"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "price",
+          "city",
+          "area",
+          "address",
+          "purpose",
+          "categoryId"
+        ]
+      },
+      "UpdatePropertyDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Modern 3BR Apartment in Nasr City"
+          },
+          "description": {
+            "type": "string",
+            "example": "Spacious apartment with balcony and parking."
+          },
+          "price": {
+            "type": "number",
+            "example": 2500000
+          },
+          "city": {
+            "type": "string",
+            "example": "Cairo"
+          },
+          "area": {
+            "type": "string",
+            "example": "Nasr City"
+          },
+          "address": {
+            "type": "string",
+            "example": "123 Abbas El Akkad Street"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 30.0626
+          },
+          "longitude": {
+            "type": "number",
+            "example": 31.3219
+          },
+          "bedrooms": {
+            "type": "number",
+            "example": 3
+          },
+          "bathrooms": {
+            "type": "number",
+            "example": 2
+          },
+          "areaSize": {
+            "type": "number",
+            "example": 180,
+            "description": "Area in square meters"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "SALE",
+              "RENT"
+            ],
+            "example": "SALE"
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "uuid-of-subcategory",
+            "description": "Leaf subcategory ID"
+          }
+        }
+      },
+      "UploadPropertyImagesDto": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "description": "One or more property images (JPEG/PNG/WebP, max 10 MB each)"
+          },
+          "primaryIndex": {
+            "type": "number",
+            "example": 0,
+            "description": "Index of uploaded file to mark as primary (0-based)"
+          }
+        },
+        "required": [
+          "images"
+        ]
+      },
+      "UpdatePropertyImageDto": {
+        "type": "object",
+        "properties": {
+          "isPrimary": {
+            "type": "boolean",
+            "example": true
+          },
+          "order": {
+            "type": "number",
+            "example": 1
+          }
+        }
+      },
+      "RejectPropertyDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Images are unclear or listing details are incomplete"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "CompleteOwnerProfileMultipartDto": {
+        "type": "object",
+        "properties": {
+          "ownerType": {
+            "type": "string",
+            "enum": [
+              "INDIVIDUAL",
+              "COMPANY"
+            ],
+            "example": "INDIVIDUAL"
+          },
+          "companyName": {
+            "type": "string",
+            "example": "شركة العقارات المتميزة"
+          },
+          "whatsapp": {
+            "type": "string",
+            "example": "+201098765432"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201234567890"
+          },
+          "email": {
+            "type": "string",
+            "example": "owner@example.com"
+          },
+          "address": {
+            "type": "string",
+            "example": "123 Main Street"
+          },
+          "city": {
+            "type": "string",
+            "example": "Cairo"
+          },
+          "area": {
+            "type": "string",
+            "example": "Nasr City"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Experienced property owner with 10+ years."
+          },
+          "nationalId": {
+            "type": "string",
+            "format": "binary",
+            "description": "National ID card image — required for INDIVIDUAL"
+          },
+          "taxNumber": {
+            "type": "string",
+            "format": "binary",
+            "description": "Tax card image — required for COMPANY"
+          },
+          "commercialRegister": {
+            "type": "string",
+            "format": "binary",
+            "description": "Commercial register image — required for COMPANY"
+          }
+        },
+        "required": [
+          "ownerType"
+        ]
+      },
+      "RejectOwnerProfileDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Invalid commercial register document"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      }
+    }
+  }
+}

@@ -20,6 +20,7 @@ const throttler_1 = require("@nestjs/throttler");
 const auth_dto_1 = require("../dto/auth.dto");
 const auth_response_dto_1 = require("../dto/auth-response.dto");
 const phone_auth_dto_1 = require("../dto/phone-auth.dto");
+const current_user_decorator_1 = require("../decorators/current-user.decorator");
 const permissions_decorator_1 = require("../decorators/permissions.decorator");
 const google_auth_guard_1 = require("../guards/google-auth.guard");
 const auth_service_1 = require("../services/auth.service");
@@ -67,6 +68,9 @@ let AuthController = class AuthController {
     }
     refreshToken(dto) {
         return this.authService.refreshToken(dto.refreshToken);
+    }
+    getMe(user) {
+        return this.authService.getMe(user.id);
     }
 };
 exports.AuthController = AuthController;
@@ -206,6 +210,20 @@ __decorate([
     __metadata("design:paramtypes", [auth_dto_1.RefreshTokenDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "refreshToken", null);
+__decorate([
+    (0, common_1.Get)('me'),
+    (0, swagger_1.ApiBearerAuth)('access-token'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get current user profile and permissions',
+        description: 'Use on app load to restore session. Store `permissions` in localStorage.',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 200, type: auth_response_dto_1.MeResponseDto }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "getMe", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('Auth'),
     (0, common_1.Controller)('auth'),

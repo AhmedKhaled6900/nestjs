@@ -22,7 +22,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Public, RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { OptionalAuth, Public, RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { AuthUser } from '../auth/interfaces/auth.interface';
 import {
   MAX_PROPERTY_IMAGE_SIZE_BYTES,
@@ -71,11 +71,22 @@ export class PropertyController {
   }
 
   @Public()
+  @OptionalAuth()
   @Get(':id')
-  @ApiOperation({ summary: 'Get property details (approved only for public)' })
+  @ApiOperation({
+    summary: 'Get property details',
+    description:
+      'Public: APPROVED only. With Bearer token: owner sees own property (any status), admin sees all.',
+  })
   @ApiParam({ name: 'id', example: 'uuid-here' })
-  findOne(@Param('id') id: string) {
-    return this.propertyService.findById(id);
+  findOne(
+    @Param('id') id: string,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    return this.propertyService.findById(
+      id,
+      user ? { id: user.id, role: user.role } : undefined,
+    );
   }
 
   @Post()

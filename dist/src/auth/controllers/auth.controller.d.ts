@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResendVerificationDto, ResetPasswordDto, VerifyEmailDto, VerifyResetOtpDto } from '../dto/auth.dto';
 import { SendPhoneOtpDto, VerifyPhoneOtpDto } from '../dto/phone-auth.dto';
+import { AuthUser } from '../interfaces/auth.interface';
 import { AuthService } from '../services/auth.service';
 import { GoogleProfile } from '../strategies/google.strategy';
 export declare class AuthController {
@@ -32,4 +33,5 @@ export declare class AuthController {
         message: string;
     }>;
     refreshToken(dto: RefreshTokenDto): Promise<import("../interfaces/auth.interface").AuthResponse>;
+    getMe(user: AuthUser): Promise<import("../interfaces/auth.interface").MeResponse>;
 }

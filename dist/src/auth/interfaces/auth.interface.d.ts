@@ -30,6 +30,11 @@ export interface AuthUserResponse {
 }
 export interface AuthResponse extends TokenPair {
     user: AuthUserResponse;
+    permissions: string[];
+}
+export interface MeResponse {
+    user: AuthUserResponse;
+    permissions: string[];
 }
 export interface RegisterPendingResponse {
     message: string;
