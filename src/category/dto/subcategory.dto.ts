@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   Min,
@@ -13,6 +14,13 @@ import {
 } from 'class-validator';
 
 export class CreateSubcategoryDto {
+  @ApiProperty({
+    example: 'uuid-of-main-category',
+    description: 'Main (parent) category UUID — required when creating a subcategory',
+  })
+  @IsUUID()
+  parentId!: string;
+
   @ApiProperty({ example: 'Apartment' })
   @IsString()
   @IsNotEmpty()

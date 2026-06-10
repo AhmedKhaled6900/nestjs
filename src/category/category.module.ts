@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AdminCategoryController } from './admin-category.controller';
-import { AdminSubcategoryController } from './admin-subcategory.controller';
+import { AdminSubcategoryController, AdminSubcategoryLegacyController } from './admin-subcategory.controller';
 import { CategoryController } from './category.controller';
 import { SubcategoryController } from './subcategory.controller';
 import { CategoryService } from './category.service';
@@ -11,6 +11,7 @@ import { CategoryService } from './category.service';
     SubcategoryController,
     AdminCategoryController,
     AdminSubcategoryController,
+    AdminSubcategoryLegacyController,
   ],
   providers: [CategoryService],
   exports: [CategoryService],

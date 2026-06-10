@@ -231,7 +231,10 @@ export class CategoryService {
     );
   }
 
-  async adminCreateSubcategory(parentId: string, dto: CreateSubcategoryDto) {
+  async adminCreateSubcategory(
+    parentId: string,
+    dto: Omit<CreateSubcategoryDto, 'parentId'> | CreateSubcategoryDto,
+  ) {
     return this.adminCreate({
       ...dto,
       parentId,

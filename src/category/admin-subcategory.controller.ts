@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Head,
   Param,
   Patch,
   Post,
@@ -17,52 +18,40 @@ import {
 import { RequirePermissions, RequireRoles } from '../auth/decorators/permissions.decorator';
 import { CategoryService } from './category.service';
 import { CreateSubcategoryDto, UpdateSubcategoryDto } from './dto/subcategory.dto';
+import { CreateSubcategoryLegacyDto } from './dto/create-subcategory-legacy.dto';
 import { QueryAdminCategoryDto } from './dto/query-admin-category.dto';
 
 @ApiTags('Admin - Subcategories')
 @ApiBearerAuth('access-token')
-@Controller('admin')
+@Controller('admin/subcategories')
 export class AdminSubcategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  @Get('categories/:parentId/subcategories')
-  @RequireRoles('ADMIN')
-  @RequirePermissions('category.read')
-  @ApiOperation({
-    summary: 'List subcategories of a main category (paginated)',
-  })
-  @ApiParam({ name: 'parentId', description: 'Main category UUID' })
-  listByParent(
-    @Param('parentId') parentId: string,
-    @Query() query: QueryAdminCategoryDto,
-  ) {
-    return this.categoryService.adminFindSubcategoriesByParent(parentId, query);
-  }
-
-  @Get('subcategories')
+  @Get()
+  @Head()
   @RequireRoles('ADMIN')
   @RequirePermissions('category.read')
   @ApiOperation({
     summary: 'List all subcategories (paginated, includes inactive)',
-    description: 'Optional parentId filters by main category. Admin only.',
+    description:
+      'Optional parentId query filters by main category. Supports GET and HEAD.',
   })
   listAll(@Query() query: QueryAdminCategoryDto) {
     return this.categoryService.adminFindSubcategories(query);
   }
 
-  @Post('categories/:parentId/subcategories')
+  @Post()
   @RequireRoles('ADMIN')
   @RequirePermissions('category.create')
-  @ApiOperation({ summary: 'Add subcategory under a main category' })
-  @ApiParam({ name: 'parentId', description: 'Main category UUID' })
-  create(
-    @Param('parentId') parentId: string,
-    @Body() dto: CreateSubcategoryDto,
-  ) {
-    return this.categoryService.adminCreateSubcategory(parentId, dto);
+  @ApiOperation({
+    summary: 'Create subcategory (parentId required in body)',
+  })
+  create(@Body() dto: CreateSubcategoryDto) {
+    return this.categoryService.adminCreateSubcategory(dto.parentId, dto);
   }
 
-  @Get('subcategories/:id')
+  @Get(':id')
+  @Head(':id')
   @RequireRoles('ADMIN')
   @RequirePermissions('category.read')
   @ApiOperation({ summary: 'Get subcategory by ID' })
@@ -71,7 +60,7 @@ export class AdminSubcategoryController {
     return this.categoryService.adminFindSubcategoryById(id);
   }
 
-  @Patch('subcategories/:id')
+  @Patch(':id')
   @RequireRoles('ADMIN')
   @RequirePermissions('category.update')
   @ApiOperation({ summary: 'Update subcategory' })
@@ -80,7 +69,7 @@ export class AdminSubcategoryController {
     return this.categoryService.adminUpdateSubcategory(id, dto);
   }
 
-  @Delete('subcategories/:id')
+  @Delete(':id')
   @RequireRoles('ADMIN')
   @RequirePermissions('category.delete')
   @ApiOperation({
@@ -90,5 +79,38 @@ export class AdminSubcategoryController {
   @ApiParam({ name: 'id', example: 'uuid-here' })
   remove(@Param('id') id: string) {
     return this.categoryService.adminRemoveSubcategory(id);
+  }
+}
+
+/** @deprecated Prefer GET/POST /admin/subcategories — kept for backward compatibility */
+@ApiTags('Admin - Subcategories')
+@ApiBearerAuth('access-token')
+@Controller('admin/categories')
+export class AdminSubcategoryLegacyController {
+  constructor(private readonly categoryService: CategoryService) {}
+
+  @Get(':parentId/subcategories')
+  @Head(':parentId/subcategories')
+  @RequireRoles('ADMIN')
+  @RequirePermissions('category.read')
+  @ApiOperation({ summary: 'List subcategories of a main category (legacy path)' })
+  @ApiParam({ name: 'parentId', description: 'Main category UUID' })
+  listByParent(
+    @Param('parentId') parentId: string,
+    @Query() query: QueryAdminCategoryDto,
+  ) {
+    return this.categoryService.adminFindSubcategoriesByParent(parentId, query);
+  }
+
+  @Post(':parentId/subcategories')
+  @RequireRoles('ADMIN')
+  @RequirePermissions('category.create')
+  @ApiOperation({ summary: 'Add subcategory under a main category (legacy path)' })
+  @ApiParam({ name: 'parentId', description: 'Main category UUID' })
+  create(
+    @Param('parentId') parentId: string,
+    @Body() dto: CreateSubcategoryLegacyDto,
+  ) {
+    return this.categoryService.adminCreateSubcategory(parentId, dto);
   }
 }

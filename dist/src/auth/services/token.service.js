@@ -24,11 +24,11 @@ let TokenService = class TokenService {
     async generateTokens(payload) {
         const accessToken = await this.jwtService.signAsync(payload, {
             secret: this.configService.getOrThrow('JWT_ACCESS_SECRET'),
-            expiresIn: this.configService.get('JWT_ACCESS_EXPIRES_IN', '15m'),
+            expiresIn: this.getAccessExpiresIn(),
         });
         const refreshToken = await this.jwtService.signAsync({ sub: payload.sub }, {
             secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
-            expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+            expiresIn: this.getRefreshExpiresIn(),
         });
         const hashedRefresh = await bcrypt.hash(refreshToken, 10);
         await this.prisma.user.update({
@@ -76,6 +76,20 @@ let TokenService = class TokenService {
             where: { id: userId },
             data: { refreshToken: null },
         });
+    }
+    getAccessExpiresIn() {
+        const configured = this.configService.get('JWT_ACCESS_EXPIRES_IN');
+        if (configured) {
+            return configured;
+        }
+        return this.configService.get('NODE_ENV') === 'production' ? '15m' : '7d';
+    }
+    getRefreshExpiresIn() {
+        const configured = this.configService.get('JWT_REFRESH_EXPIRES_IN');
+        if (configured) {
+            return configured;
+        }
+        return this.configService.get('NODE_ENV') === 'production' ? '7d' : '30d';
     }
 };
 exports.TokenService = TokenService;
