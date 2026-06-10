@@ -16,14 +16,14 @@ export class TokenService {
   async generateTokens(payload: JwtPayload): Promise<TokenPair> {
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m'),
+      expiresIn: this.getAccessExpiresIn(),
     });
 
     const refreshToken = await this.jwtService.signAsync(
       { sub: payload.sub },
       {
         secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+        expiresIn: this.getRefreshExpiresIn(),
       },
     );
 
@@ -79,5 +79,23 @@ export class TokenService {
       where: { id: userId },
       data: { refreshToken: null },
     });
+  }
+
+  private getAccessExpiresIn(): string {
+    const configured = this.configService.get<string>('JWT_ACCESS_EXPIRES_IN');
+    if (configured) {
+      return configured;
+    }
+
+    return this.configService.get('NODE_ENV') === 'production' ? '15m' : '7d';
+  }
+
+  private getRefreshExpiresIn(): string {
+    const configured = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN');
+    if (configured) {
+      return configured;
+    }
+
+    return this.configService.get('NODE_ENV') === 'production' ? '7d' : '30d';
   }
 }
