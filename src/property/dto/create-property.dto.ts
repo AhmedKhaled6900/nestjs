@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PropertyPurpose } from '@prisma/client';
+import { PropertyPurpose, PricePeriod } from '@prisma/client';
 import {
   IsEnum,
   IsInt,
@@ -11,6 +11,7 @@ import {
   Max,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreatePropertyDto {
@@ -26,10 +27,20 @@ export class CreatePropertyDto {
   @MinLength(20)
   description!: string;
 
-  @ApiProperty({ example: 2500000 })
+  @ApiProperty({ example: 2500000, description: 'Sale price or rent amount per period' })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   price!: number;
+
+  @ApiPropertyOptional({
+    enum: PricePeriod,
+    example: 'MONTH',
+    description: 'Required when purpose is RENT — price per day, month, or year',
+  })
+  @ValidateIf((dto: CreatePropertyDto) => dto.purpose === PropertyPurpose.RENT)
+  @IsEnum(PricePeriod)
+  @IsNotEmpty()
+  pricePeriod?: PricePeriod;
 
   @ApiProperty({ example: 'Cairo' })
   @IsString()

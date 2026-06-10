@@ -36,7 +36,18 @@ export class AdminSubcategoryController {
     @Param('parentId') parentId: string,
     @Query() query: QueryAdminCategoryDto,
   ) {
-    return this.categoryService.adminFindSubcategories(parentId, query);
+    return this.categoryService.adminFindSubcategoriesByParent(parentId, query);
+  }
+
+  @Get('subcategories')
+  @RequireRoles('ADMIN')
+  @RequirePermissions('category.read')
+  @ApiOperation({
+    summary: 'List all subcategories (paginated, includes inactive)',
+    description: 'Optional parentId filters by main category. Admin only.',
+  })
+  listAll(@Query() query: QueryAdminCategoryDto) {
+    return this.categoryService.adminFindSubcategories(query);
   }
 
   @Post('categories/:parentId/subcategories')

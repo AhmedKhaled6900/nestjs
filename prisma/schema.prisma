@@ -141,6 +141,12 @@ enum PropertyPurpose {
   RENT
 }
 
+enum PricePeriod {
+  DAY
+  MONTH
+  YEAR
+}
+
 enum PropertyStatus {
   DRAFT
   PENDING
@@ -175,6 +181,7 @@ model Property {
   title           String
   description     String          @db.Text
   price           Decimal         @db.Decimal(14, 2)
+  pricePeriod     PricePeriod?
   city            String
   area            String
   address         String

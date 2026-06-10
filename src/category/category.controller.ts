@@ -11,9 +11,9 @@ export class CategoryController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'List category tree (paginated main categories + subcategories)' })
+  @ApiOperation({ summary: 'List main categories (paginated)' })
   findAll(@Query() query: PaginationQueryDto) {
-    return this.categoryService.findAllTree(query);
+    return this.categoryService.findMainCategories(query);
   }
 
   @Public()

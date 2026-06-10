@@ -12,6 +12,7 @@ import {
   Property,
   PropertyImage,
   PropertyPurpose,
+  PricePeriod,
   PropertyStatus,
   RoleName,
 } from '@prisma/client';
@@ -47,6 +48,7 @@ export class PropertyService {
   async create(ownerId: string, dto: CreatePropertyDto) {
     await this.assertCanManageProperties(ownerId);
     await this.categoryService.assertLeafCategory(dto.categoryId);
+    this.validatePricePeriod(dto.purpose, dto.pricePeriod);
 
     const property = await this.prisma.property.create({
       data: this.toCreateData(ownerId, dto),
@@ -59,10 +61,15 @@ export class PropertyService {
   async findApproved(query: QueryPropertyDto) {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
+    const categoryFilter = await this.categoryService.buildPropertyCategoryFilter(
+      query,
+    );
+
     const where: Prisma.PropertyWhereInput = {
       status: PropertyStatus.APPROVED,
       ...(query.purpose ? { purpose: query.purpose } : {}),
-      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+      ...(query.pricePeriod ? { pricePeriod: query.pricePeriod } : {}),
+      ...categoryFilter,
       ...(query.city ? { city: { equals: query.city, mode: 'insensitive' } } : {}),
     };
 
@@ -88,9 +95,14 @@ export class PropertyService {
   async findMine(ownerId: string, query: QueryOwnerPropertyDto) {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
+    const categoryFilter = await this.categoryService.buildPropertyCategoryFilter(
+      query,
+    );
+
     const where: Prisma.PropertyWhereInput = {
       ownerId,
       ...(query.status ? { status: query.status } : {}),
+      ...categoryFilter,
     };
 
     const [items, total] = await Promise.all([
@@ -141,6 +153,11 @@ export class PropertyService {
 
   async update(propertyId: string, ownerId: string, dto: UpdatePropertyDto) {
     const property = await this.findOwnedEditableProperty(propertyId, ownerId);
+
+    const nextPurpose = dto.purpose ?? property.purpose;
+    const nextPricePeriod =
+      dto.pricePeriod !== undefined ? dto.pricePeriod : property.pricePeriod;
+    this.validatePricePeriod(nextPurpose, nextPricePeriod);
 
     if (dto.categoryId) {
       await this.categoryService.assertLeafCategory(dto.categoryId);
@@ -265,9 +282,14 @@ export class PropertyService {
   async adminFindAll(query: QueryOwnerPropertyDto) {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
-    const where: Prisma.PropertyWhereInput = query.status
-      ? { status: query.status }
-      : {};
+    const categoryFilter = await this.categoryService.buildPropertyCategoryFilter(
+      query,
+    );
+
+    const where: Prisma.PropertyWhereInput = {
+      ...(query.status ? { status: query.status } : {}),
+      ...categoryFilter,
+    };
 
     const [items, total] = await Promise.all([
       this.prisma.property.findMany({
@@ -422,6 +444,7 @@ export class PropertyService {
       title: property.title,
       description: property.description,
       price: property.price.toNumber(),
+      pricePeriod: property.pricePeriod,
       city: property.city,
       area: property.area,
       address: property.address,
@@ -453,6 +476,26 @@ export class PropertyService {
       createdAt: property.createdAt,
       updatedAt: property.updatedAt,
     };
+  }
+
+  private validatePricePeriod(
+    purpose: PropertyPurpose,
+    pricePeriod?: PricePeriod | null,
+  ): void {
+    if (purpose === PropertyPurpose.RENT) {
+      if (!pricePeriod) {
+        throw new BadRequestException(
+          'pricePeriod is required for RENT properties (DAY, MONTH, or YEAR)',
+        );
+      }
+      return;
+    }
+
+    if (pricePeriod) {
+      throw new BadRequestException(
+        'pricePeriod is only allowed for RENT properties',
+      );
+    }
   }
 
   private async assertCanManageProperties(userId: string): Promise<void> {
@@ -552,6 +595,8 @@ export class PropertyService {
       areaSize:
         dto.areaSize !== undefined ? new Prisma.Decimal(dto.areaSize) : undefined,
       purpose: dto.purpose,
+      pricePeriod:
+        dto.purpose === PropertyPurpose.RENT ? dto.pricePeriod : null,
       status: PropertyStatus.DRAFT,
       category: { connect: { id: dto.categoryId } },
       owner: { connect: { id: ownerId } },
@@ -580,6 +625,8 @@ export class PropertyService {
         ? { areaSize: new Prisma.Decimal(dto.areaSize) }
         : {}),
       ...(dto.purpose !== undefined ? { purpose: dto.purpose } : {}),
+      ...(dto.pricePeriod !== undefined ? { pricePeriod: dto.pricePeriod } : {}),
+      ...(dto.purpose === PropertyPurpose.SALE ? { pricePeriod: null } : {}),
       ...(dto.categoryId !== undefined
         ? { category: { connect: { id: dto.categoryId } } }
         : {}),

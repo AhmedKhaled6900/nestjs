@@ -14,12 +14,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CreateSubcategoryDto, UpdateSubcategoryDto } from './dto/subcategory.dto';
 import { QueryAdminCategoryDto } from './dto/query-admin-category.dto';
+import { QuerySubcategoryDto } from './dto/query-subcategory.dto';
 
 @Injectable()
 export class CategoryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAllTree(query: PaginationQueryDto) {
+  async findMainCategories(query: PaginationQueryDto) {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     const where = { isActive: true, parentId: null };
@@ -30,22 +31,112 @@ export class CategoryService {
         skip,
         take: limit,
         orderBy: { sortOrder: 'asc' },
+      }),
+      this.prisma.category.count({ where }),
+    ]);
+
+    return buildPaginatedResult(
+      categories.map((category) => this.mapMainCategory(category)),
+      total,
+      page,
+      limit,
+    );
+  }
+
+  /** @deprecated Use findMainCategories — kept for internal compatibility */
+  async findAllTree(query: PaginationQueryDto) {
+    return this.findMainCategories(query);
+  }
+
+  async findSubcategories(
+    query: QuerySubcategoryDto,
+    options: { activeOnly: boolean; isActive?: boolean },
+  ) {
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
+
+    if (query.parentId) {
+      await this.assertMainCategory(query.parentId);
+    }
+
+    const where: Prisma.CategoryWhereInput = {
+      parentId: query.parentId ? query.parentId : { not: null },
+      ...(options.isActive !== undefined ? { isActive: options.isActive } : {}),
+      ...(options.activeOnly
+        ? { isActive: true, parent: { isActive: true } }
+        : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.category.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ parent: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
         include: {
-          children: {
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
-          },
+          parent: { select: { id: true, name: true, slug: true } },
+          _count: options.activeOnly
+            ? undefined
+            : { select: { properties: true } },
         },
       }),
       this.prisma.category.count({ where }),
     ]);
 
     return buildPaginatedResult(
-      categories.map((category) => this.mapCategory(category)),
+      items.map((item) => this.mapSubcategory(item, options.activeOnly)),
       total,
       page,
       limit,
     );
+  }
+
+  async assertSubcategoryUnderParent(
+    subcategoryId: string,
+    parentCategoryId: string,
+  ): Promise<void> {
+    const sub = await this.prisma.category.findUnique({
+      where: { id: subcategoryId },
+    });
+
+    if (!sub || !sub.parentId) {
+      throw new NotFoundException('Subcategory not found');
+    }
+
+    if (sub.parentId !== parentCategoryId) {
+      throw new BadRequestException(
+        'subcategoryId does not belong to the given parentCategoryId',
+      );
+    }
+  }
+
+  async buildPropertyCategoryFilter(query: {
+    parentCategoryId?: string;
+    subcategoryId?: string;
+    categoryId?: string;
+  }): Promise<Prisma.PropertyWhereInput> {
+    const subId = query.subcategoryId ?? query.categoryId;
+
+    if (subId && query.parentCategoryId) {
+      await this.assertSubcategoryUnderParent(subId, query.parentCategoryId);
+      return { categoryId: subId };
+    }
+
+    if (subId) {
+      await this.assertLeafCategory(subId);
+      return { categoryId: subId };
+    }
+
+    if (query.parentCategoryId) {
+      await this.assertMainCategory(query.parentCategoryId);
+      return {
+        category: {
+          parentId: query.parentCategoryId,
+          isActive: true,
+        },
+      };
+    }
+
+    return {};
   }
 
   async findBySlug(slug: string) {
@@ -67,11 +158,18 @@ export class CategoryService {
     return this.mapCategory(category);
   }
 
+  async adminFindSubcategories(query: QueryAdminCategoryDto) {
+    return this.findSubcategories(
+      { page: query.page, limit: query.limit, parentId: query.parentId },
+      { activeOnly: false, isActive: query.isActive },
+    );
+  }
+
   async adminFindAll(query: QueryAdminCategoryDto) {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     if (query.parentId) {
-      return this.adminFindSubcategories(query.parentId, query);
+      return this.adminFindSubcategories(query);
     }
 
     const where: Prisma.CategoryWhereInput = {
@@ -123,9 +221,14 @@ export class CategoryService {
     return this.mapAdminCategory(category);
   }
 
-  async adminFindSubcategories(parentId: string, query: QueryAdminCategoryDto) {
-    const { page, limit, skip } = resolvePagination(query.page, query.limit);
-    return this.listSubcategoriesPaginated(parentId, query, page, limit, skip);
+  async adminFindSubcategoriesByParent(
+    parentId: string,
+    query: QueryAdminCategoryDto,
+  ) {
+    return this.findSubcategories(
+      { page: query.page, limit: query.limit, parentId },
+      { activeOnly: false, isActive: query.isActive },
+    );
   }
 
   async adminCreateSubcategory(parentId: string, dto: CreateSubcategoryDto) {
@@ -265,29 +368,9 @@ export class CategoryService {
     limit: number,
     skip: number,
   ) {
-    await this.assertMainCategory(parentId);
-
-    const where: Prisma.CategoryWhereInput = {
-      parentId,
-      ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
-    };
-
-    const [items, total] = await Promise.all([
-      this.prisma.category.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { sortOrder: 'asc' },
-        include: { parent: true },
-      }),
-      this.prisma.category.count({ where }),
-    ]);
-
-    return buildPaginatedResult(
-      items.map((item) => this.mapAdminCategory(item)),
-      total,
-      page,
-      limit,
+    return this.findSubcategories(
+      { page, limit, parentId },
+      { activeOnly: false, isActive: query.isActive },
     );
   }
 
@@ -349,6 +432,61 @@ export class CategoryService {
     if (existing && existing.id !== excludeId) {
       throw new ConflictException(`Slug "${slug}" is already in use`);
     }
+  }
+
+  private mapMainCategory(category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    sortOrder: number;
+  }) {
+    return {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      sortOrder: category.sortOrder,
+    };
+  }
+
+  private mapSubcategory(
+    category: {
+      id: string;
+      name: string;
+      slug: string;
+      description: string | null;
+      parentId: string | null;
+      sortOrder: number;
+      isActive: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+      parent?: { id: string; name: string; slug: string } | null;
+      _count?: { properties: number };
+    },
+    publicView: boolean,
+  ) {
+    const base = {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      parentId: category.parentId,
+      sortOrder: category.sortOrder,
+      parent: category.parent ?? null,
+    };
+
+    if (publicView) {
+      return base;
+    }
+
+    return {
+      ...base,
+      isActive: category.isActive,
+      propertyCount: category._count?.properties,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+    };
   }
 
   private mapCategory(category: {

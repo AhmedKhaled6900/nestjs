@@ -13,7 +13,8 @@ export function buildSwaggerDocument(app: INestApplication) {
       'access-token',
     )
     .addTag('Auth', 'Registration, login, OTP, OAuth, password reset & tokens')
-    .addTag('Categories', 'Property category tree')
+    .addTag('Categories', 'Main property categories')
+    .addTag('Subcategories', 'Property subcategories (public read)')
     .addTag('Admin - Categories', 'Admin main category CRUD')
     .addTag('Admin - Subcategories', 'Admin subcategory CRUD')
     .addTag('Properties', 'Property listings and images')

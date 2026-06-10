@@ -14,6 +14,7 @@ export declare class PropertyController {
         title: string;
         description: string;
         price: number;
+        pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
         city: string;
         area: string;
         address: string;
@@ -59,6 +60,7 @@ export declare class PropertyController {
         title: string;
         description: string;
         price: number;
+        pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
         city: string;
         area: string;
         address: string;
@@ -104,6 +106,7 @@ export declare class PropertyController {
         title: string;
         description: string;
         price: number;
+        pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
         city: string;
         area: string;
         address: string;
@@ -149,6 +152,7 @@ export declare class PropertyController {
         title: string;
         description: string;
         price: number;
+        pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
         city: string;
         area: string;
         address: string;
@@ -194,6 +198,7 @@ export declare class PropertyController {
         title: string;
         description: string;
         price: number;
+        pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
         city: string;
         area: string;
         address: string;
@@ -250,6 +255,7 @@ export declare class PropertyController {
             title: string;
             description: string;
             price: number;
+            pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
             city: string;
             area: string;
             address: string;
@@ -298,6 +304,7 @@ export declare class PropertyController {
             title: string;
             description: string;
             price: number;
+            pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
             city: string;
             area: string;
             address: string;
@@ -346,6 +353,7 @@ export declare class PropertyController {
             title: string;
             description: string;
             price: number;
+            pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
             city: string;
             area: string;
             address: string;
@@ -406,6 +414,7 @@ export declare class PropertyController {
             title: string;
             description: string;
             price: number;
+            pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
             city: string;
             area: string;
             address: string;
@@ -454,6 +463,7 @@ export declare class PropertyController {
             title: string;
             description: string;
             price: number;
+            pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
             city: string;
             area: string;
             address: string;
@@ -502,6 +512,7 @@ export declare class PropertyController {
             title: string;
             description: string;
             price: number;
+            pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
             city: string;
             area: string;
             address: string;
