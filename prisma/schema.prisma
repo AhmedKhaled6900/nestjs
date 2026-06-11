@@ -62,6 +62,8 @@ model User {
   propertyReviews PropertyReview[]
   propertyComments PropertyComment[]
   priceOffersAsCustomer PriceOffer[] @relation("CustomerPriceOffers")
+  propertyRentals       PropertyRental[] @relation("TenantRentals")
+  attributesCreated     Attribute[]      @relation("AttributeCreator")
 
   @@unique([provider, providerId])
   @@index([roleId])
@@ -173,8 +175,9 @@ model Category {
   updatedAt   DateTime @updatedAt
 
   parent     Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children   Category[] @relation("CategoryTree")
-  properties Property[]
+  children             Category[]             @relation("CategoryTree")
+  properties           Property[]
+  subcategoryAttributes SubcategoryAttribute[]
 
   @@index([parentId])
   @@index([isActive])
@@ -215,6 +218,8 @@ model Property {
   reviews  PropertyReview[]
   comments PropertyComment[]
   priceOffers PriceOffer[]
+  rentals     PropertyRental[]
+  attributeValues PropertyAttributeValue[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -256,6 +261,7 @@ enum NotificationType {
   PRICE_OFFER_COUNTERED
   PRICE_OFFER_EXPIRED
   PRICE_OFFER_NEGOTIATING_FAILED
+  PROPERTY_RENTED
 }
 
 enum OfferStatus {
@@ -270,6 +276,17 @@ enum OfferStatus {
 enum OfferSenderRole {
   CUSTOMER
   OWNER
+}
+
+enum RentalSource {
+  DIRECT_BOOKING
+  NEGOTIATION
+}
+
+enum RentalStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
 }
 
 model Notification {
@@ -379,6 +396,7 @@ model PriceOffer {
   property Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   customer User              @relation("CustomerPriceOffers", fields: [customerId], references: [id], onDelete: Cascade)
   rounds   PriceOfferRound[]
+  rental   PropertyRental?
 
   @@index([propertyId, status])
   @@index([customerId, status])
@@ -393,6 +411,7 @@ model PriceOfferRound {
   senderId    String
   price       Decimal         @db.Decimal(14, 2)
   pricePeriod PricePeriod
+  duration    Int
   notes       String?         @db.Text
   createdAt   DateTime        @default(now())
 
@@ -400,4 +419,99 @@ model PriceOfferRound {
 
   @@index([offerId, createdAt])
   @@map("price_offer_rounds")
+}
+
+model PropertyRental {
+  id          String        @id @default(uuid())
+  propertyId  String
+  tenantId    String
+  offerId     String?       @unique
+  source      RentalSource
+  agreedPrice Decimal       @db.Decimal(14, 2)
+  pricePeriod PricePeriod
+  duration    Int
+  startedAt   DateTime      @default(now())
+  endsAt      DateTime
+  status      RentalStatus  @default(ACTIVE)
+  notes       String?       @db.Text
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  property Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant   User        @relation("TenantRentals", fields: [tenantId], references: [id], onDelete: Cascade)
+  offer    PriceOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+
+  @@index([propertyId, status])
+  @@index([tenantId, status])
+  @@index([endsAt])
+  @@map("property_rentals")
+}
+
+enum AttributeType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+  MULTI_SELECT
+  DATE
+}
+
+enum AttributeScope {
+  SYSTEM
+  COMPANY
+}
+
+model Attribute {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  type        AttributeType
+  scope       AttributeScope
+  options     Json?
+  companyId   String?
+  createdById String?
+  isActive    Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  createdBy            User?                  @relation("AttributeCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  subcategoryLinks     SubcategoryAttribute[]
+  propertyValues       PropertyAttributeValue[]
+
+  @@index([scope, isActive])
+  @@index([companyId])
+  @@map("attributes")
+}
+
+model SubcategoryAttribute {
+  subcategoryId String
+  attributeId   String
+  isRequired    Boolean @default(false)
+  sortOrder     Int     @default(0)
+
+  subcategory Category  @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@id([subcategoryId, attributeId])
+  @@index([subcategoryId, sortOrder])
+  @@map("subcategory_attributes")
+}
+
+model PropertyAttributeValue {
+  id          String         @id @default(cuid())
+  propertyId  String
+  attributeId String?
+
+  customName  String?
+  customType  AttributeType?
+
+  value Json
+
+  property  Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  attribute Attribute? @relation(fields: [attributeId], references: [id], onDelete: SetNull)
+
+  @@unique([propertyId, attributeId])
+  @@index([propertyId])
+  @@map("property_attribute_values")
 }

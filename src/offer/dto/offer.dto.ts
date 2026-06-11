@@ -3,6 +3,7 @@ import { OfferStatus, PricePeriod } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -22,10 +23,19 @@ export class CreateOfferDto {
   @ApiProperty({
     enum: PricePeriod,
     example: 'MONTH',
-    description: 'Offer duration: per day, month, or year',
+    description: 'Billing period: per day, month, or year',
   })
   @IsEnum(PricePeriod)
   pricePeriod!: PricePeriod;
+
+  @ApiProperty({
+    example: 12,
+    description: 'Rental length in units of pricePeriod (e.g. 12 months)',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  duration!: number;
 
   @ApiPropertyOptional({ example: 'Flexible move-in date, willing to pay upfront.' })
   @IsOptional()

@@ -7,6 +7,7 @@ import {
   PriceOfferExpiredEvent,
   PriceOfferNegotiatingFailedEvent,
   PriceOfferReceivedEvent,
+  PropertyRentedEvent,
   PriceOfferRejectedEvent,
   PropertyApprovedEvent,
   PropertyRejectedEvent,
@@ -136,5 +137,14 @@ export function buildPriceOfferNegotiatingFailedNotification(
   return {
     title: 'تعذّرت المفاوضة',
     body: `توقفت المفاوضة على «${payload.propertyTitle}» بعد الوصول للحد الأقصى من العروض (3 لكل طرف).`,
+  };
+}
+
+export function buildPropertyRentedNotification(
+  payload: PropertyRentedEvent,
+): NotificationContent {
+  return {
+    title: 'تم تأجير الوحدة',
+    body: `تم تأجير «${payload.propertyTitle}» — السعر المتفق ${payload.agreedPrice} / ${payload.pricePeriod} لمدة ${payload.duration} حتى ${payload.endsAt.slice(0, 10)}`,
   };
 }

@@ -22,6 +22,8 @@ const notification_module_1 = require("./notification/notification.module");
 const admin_module_1 = require("./admin/admin.module");
 const engagement_module_1 = require("./engagement/engagement.module");
 const offer_module_1 = require("./offer/offer.module");
+const rental_module_1 = require("./rental/rental.module");
+const attribute_module_1 = require("./attribute/attribute.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -48,6 +50,8 @@ exports.AppModule = AppModule = __decorate([
             admin_module_1.AdminModule,
             engagement_module_1.EngagementModule,
             offer_module_1.OfferModule,
+            rental_module_1.RentalModule,
+            attribute_module_1.AttributeModule,
             health_module_1.HealthModule,
         ],
     })

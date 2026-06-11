@@ -13,6 +13,7 @@ import {
   PriceOfferReceivedEvent,
   PriceOfferRejectedEvent,
   PropertyApprovedEvent,
+  PropertyRentedEvent,
   PropertyRejectedEvent,
   UserEmailVerifiedEvent,
   UserRegisteredEvent,
@@ -28,6 +29,7 @@ import {
   buildPriceOfferReceivedNotification,
   buildPriceOfferRejectedNotification,
   buildPropertyApprovedNotification,
+  buildPropertyRentedNotification,
   buildPropertyRejectedNotification,
   buildUserEmailVerifiedNotification,
   buildUserRegisteredNotification,
@@ -150,6 +152,47 @@ export class NotificationListener {
         reason: payload.reason,
       },
     });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PROPERTY_RENTED, { async: true })
+  async handlePropertyRented(payload: PropertyRentedEvent) {
+    const content = buildPropertyRentedNotification(payload);
+
+    await Promise.all([
+      this.notificationService.create({
+        userId: payload.ownerUserId,
+        type: NotificationType.PROPERTY_RENTED,
+        title: content.title,
+        body: content.body,
+        data: {
+          rentalId: payload.rentalId,
+          propertyId: payload.propertyId,
+          propertyTitle: payload.propertyTitle,
+          tenantId: payload.tenantId,
+          agreedPrice: payload.agreedPrice,
+          pricePeriod: payload.pricePeriod,
+          duration: payload.duration,
+          endsAt: payload.endsAt,
+          source: payload.source,
+        },
+      }),
+      this.notificationService.create({
+        userId: payload.tenantId,
+        type: NotificationType.PROPERTY_RENTED,
+        title: content.title,
+        body: content.body,
+        data: {
+          rentalId: payload.rentalId,
+          propertyId: payload.propertyId,
+          propertyTitle: payload.propertyTitle,
+          agreedPrice: payload.agreedPrice,
+          pricePeriod: payload.pricePeriod,
+          duration: payload.duration,
+          endsAt: payload.endsAt,
+          source: payload.source,
+        },
+      }),
+    ]);
   }
 
   @OnEvent(NOTIFICATION_EVENTS.PRICE_OFFER_RECEIVED, { async: true })

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PropertyPurpose, PricePeriod } from '@prisma/client';
+import { PropertyAttributesInputDto } from '../../attribute/dto/attribute.dto';
 import {
   IsBoolean,
   IsEnum,
@@ -15,7 +16,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-export class CreatePropertyDto {
+export class CreatePropertyDto extends PropertyAttributesInputDto {
   @ApiProperty({ example: 'Modern 3BR Apartment in Nasr City' })
   @IsString()
   @IsNotEmpty()

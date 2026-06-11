@@ -11,7 +11,7 @@ export declare class PropertyController {
     private readonly propertyService;
     private readonly propertyImageService;
     constructor(propertyService: PropertyService, propertyImageService: PropertyImageService);
-    findApproved(query: QueryPropertyDto): Promise<import("../common/dto/pagination.dto").PaginatedResult<{
+    findApproved(query: QueryPropertyDto, user?: AuthUser): Promise<import("../common/dto/pagination.dto").PaginatedResult<{
         id: string;
         title: string;
         description: string;
@@ -62,6 +62,40 @@ export declare class PropertyController {
         submittedAt: Date | null;
         approvedAt: Date | null;
         isNegotiable: boolean;
+        attributes: {
+            system: {
+                id: string;
+                attributeId: string | null;
+                name: string;
+                slug: string;
+                type: import(".prisma/client").$Enums.AttributeType;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+            custom: {
+                id: string;
+                name: string | null;
+                type: import(".prisma/client").$Enums.AttributeType | null;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+        };
+        rental: {
+            tenant?: {
+                id: string;
+                name: string;
+                email: string | null;
+                phone: string | null;
+            } | undefined;
+            id: string;
+            source: import(".prisma/client").$Enums.RentalSource;
+            agreedPrice: number;
+            pricePeriod: string;
+            duration: number;
+            startedAt: Date;
+            endsAt: Date;
+            status: import(".prisma/client").$Enums.RentalStatus;
+            notes: string | null;
+            offerId: string | null;
+        } | undefined;
         images: {
             id: string;
             imageUrl: string | null;
@@ -122,6 +156,40 @@ export declare class PropertyController {
         submittedAt: Date | null;
         approvedAt: Date | null;
         isNegotiable: boolean;
+        attributes: {
+            system: {
+                id: string;
+                attributeId: string | null;
+                name: string;
+                slug: string;
+                type: import(".prisma/client").$Enums.AttributeType;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+            custom: {
+                id: string;
+                name: string | null;
+                type: import(".prisma/client").$Enums.AttributeType | null;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+        };
+        rental: {
+            tenant?: {
+                id: string;
+                name: string;
+                email: string | null;
+                phone: string | null;
+            } | undefined;
+            id: string;
+            source: import(".prisma/client").$Enums.RentalSource;
+            agreedPrice: number;
+            pricePeriod: string;
+            duration: number;
+            startedAt: Date;
+            endsAt: Date;
+            status: import(".prisma/client").$Enums.RentalStatus;
+            notes: string | null;
+            offerId: string | null;
+        } | undefined;
         images: {
             id: string;
             imageUrl: string | null;
@@ -183,6 +251,40 @@ export declare class PropertyController {
             submittedAt: Date | null;
             approvedAt: Date | null;
             isNegotiable: boolean;
+            attributes: {
+                system: {
+                    id: string;
+                    attributeId: string | null;
+                    name: string;
+                    slug: string;
+                    type: import(".prisma/client").$Enums.AttributeType;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+                custom: {
+                    id: string;
+                    name: string | null;
+                    type: import(".prisma/client").$Enums.AttributeType | null;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+            };
+            rental: {
+                tenant?: {
+                    id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                } | undefined;
+                id: string;
+                source: import(".prisma/client").$Enums.RentalSource;
+                agreedPrice: number;
+                pricePeriod: string;
+                duration: number;
+                startedAt: Date;
+                endsAt: Date;
+                status: import(".prisma/client").$Enums.RentalStatus;
+                notes: string | null;
+                offerId: string | null;
+            } | undefined;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -260,6 +362,40 @@ export declare class PropertyController {
             submittedAt: Date | null;
             approvedAt: Date | null;
             isNegotiable: boolean;
+            attributes: {
+                system: {
+                    id: string;
+                    attributeId: string | null;
+                    name: string;
+                    slug: string;
+                    type: import(".prisma/client").$Enums.AttributeType;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+                custom: {
+                    id: string;
+                    name: string | null;
+                    type: import(".prisma/client").$Enums.AttributeType | null;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+            };
+            rental: {
+                tenant?: {
+                    id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                } | undefined;
+                id: string;
+                source: import(".prisma/client").$Enums.RentalSource;
+                agreedPrice: number;
+                pricePeriod: string;
+                duration: number;
+                startedAt: Date;
+                endsAt: Date;
+                status: import(".prisma/client").$Enums.RentalStatus;
+                notes: string | null;
+                offerId: string | null;
+            } | undefined;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -336,6 +472,40 @@ export declare class PropertyController {
         submittedAt: Date | null;
         approvedAt: Date | null;
         isNegotiable: boolean;
+        attributes: {
+            system: {
+                id: string;
+                attributeId: string | null;
+                name: string;
+                slug: string;
+                type: import(".prisma/client").$Enums.AttributeType;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+            custom: {
+                id: string;
+                name: string | null;
+                type: import(".prisma/client").$Enums.AttributeType | null;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+        };
+        rental: {
+            tenant?: {
+                id: string;
+                name: string;
+                email: string | null;
+                phone: string | null;
+            } | undefined;
+            id: string;
+            source: import(".prisma/client").$Enums.RentalSource;
+            agreedPrice: number;
+            pricePeriod: string;
+            duration: number;
+            startedAt: Date;
+            endsAt: Date;
+            status: import(".prisma/client").$Enums.RentalStatus;
+            notes: string | null;
+            offerId: string | null;
+        } | undefined;
         images: {
             id: string;
             imageUrl: string | null;
@@ -396,6 +566,40 @@ export declare class PropertyController {
         submittedAt: Date | null;
         approvedAt: Date | null;
         isNegotiable: boolean;
+        attributes: {
+            system: {
+                id: string;
+                attributeId: string | null;
+                name: string;
+                slug: string;
+                type: import(".prisma/client").$Enums.AttributeType;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+            custom: {
+                id: string;
+                name: string | null;
+                type: import(".prisma/client").$Enums.AttributeType | null;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+        };
+        rental: {
+            tenant?: {
+                id: string;
+                name: string;
+                email: string | null;
+                phone: string | null;
+            } | undefined;
+            id: string;
+            source: import(".prisma/client").$Enums.RentalSource;
+            agreedPrice: number;
+            pricePeriod: string;
+            duration: number;
+            startedAt: Date;
+            endsAt: Date;
+            status: import(".prisma/client").$Enums.RentalStatus;
+            notes: string | null;
+            offerId: string | null;
+        } | undefined;
         images: {
             id: string;
             imageUrl: string | null;
@@ -456,6 +660,40 @@ export declare class PropertyController {
         submittedAt: Date | null;
         approvedAt: Date | null;
         isNegotiable: boolean;
+        attributes: {
+            system: {
+                id: string;
+                attributeId: string | null;
+                name: string;
+                slug: string;
+                type: import(".prisma/client").$Enums.AttributeType;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+            custom: {
+                id: string;
+                name: string | null;
+                type: import(".prisma/client").$Enums.AttributeType | null;
+                value: import("@prisma/client/runtime/library").JsonValue;
+            }[];
+        };
+        rental: {
+            tenant?: {
+                id: string;
+                name: string;
+                email: string | null;
+                phone: string | null;
+            } | undefined;
+            id: string;
+            source: import(".prisma/client").$Enums.RentalSource;
+            agreedPrice: number;
+            pricePeriod: string;
+            duration: number;
+            startedAt: Date;
+            endsAt: Date;
+            status: import(".prisma/client").$Enums.RentalStatus;
+            notes: string | null;
+            offerId: string | null;
+        } | undefined;
         images: {
             id: string;
             imageUrl: string | null;
@@ -527,6 +765,40 @@ export declare class PropertyController {
             submittedAt: Date | null;
             approvedAt: Date | null;
             isNegotiable: boolean;
+            attributes: {
+                system: {
+                    id: string;
+                    attributeId: string | null;
+                    name: string;
+                    slug: string;
+                    type: import(".prisma/client").$Enums.AttributeType;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+                custom: {
+                    id: string;
+                    name: string | null;
+                    type: import(".prisma/client").$Enums.AttributeType | null;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+            };
+            rental: {
+                tenant?: {
+                    id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                } | undefined;
+                id: string;
+                source: import(".prisma/client").$Enums.RentalSource;
+                agreedPrice: number;
+                pricePeriod: string;
+                duration: number;
+                startedAt: Date;
+                endsAt: Date;
+                status: import(".prisma/client").$Enums.RentalStatus;
+                notes: string | null;
+                offerId: string | null;
+            } | undefined;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -590,6 +862,40 @@ export declare class PropertyController {
             submittedAt: Date | null;
             approvedAt: Date | null;
             isNegotiable: boolean;
+            attributes: {
+                system: {
+                    id: string;
+                    attributeId: string | null;
+                    name: string;
+                    slug: string;
+                    type: import(".prisma/client").$Enums.AttributeType;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+                custom: {
+                    id: string;
+                    name: string | null;
+                    type: import(".prisma/client").$Enums.AttributeType | null;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+            };
+            rental: {
+                tenant?: {
+                    id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                } | undefined;
+                id: string;
+                source: import(".prisma/client").$Enums.RentalSource;
+                agreedPrice: number;
+                pricePeriod: string;
+                duration: number;
+                startedAt: Date;
+                endsAt: Date;
+                status: import(".prisma/client").$Enums.RentalStatus;
+                notes: string | null;
+                offerId: string | null;
+            } | undefined;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -653,6 +959,40 @@ export declare class PropertyController {
             submittedAt: Date | null;
             approvedAt: Date | null;
             isNegotiable: boolean;
+            attributes: {
+                system: {
+                    id: string;
+                    attributeId: string | null;
+                    name: string;
+                    slug: string;
+                    type: import(".prisma/client").$Enums.AttributeType;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+                custom: {
+                    id: string;
+                    name: string | null;
+                    type: import(".prisma/client").$Enums.AttributeType | null;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+            };
+            rental: {
+                tenant?: {
+                    id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                } | undefined;
+                id: string;
+                source: import(".prisma/client").$Enums.RentalSource;
+                agreedPrice: number;
+                pricePeriod: string;
+                duration: number;
+                startedAt: Date;
+                endsAt: Date;
+                status: import(".prisma/client").$Enums.RentalStatus;
+                notes: string | null;
+                offerId: string | null;
+            } | undefined;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -728,6 +1068,40 @@ export declare class PropertyController {
             submittedAt: Date | null;
             approvedAt: Date | null;
             isNegotiable: boolean;
+            attributes: {
+                system: {
+                    id: string;
+                    attributeId: string | null;
+                    name: string;
+                    slug: string;
+                    type: import(".prisma/client").$Enums.AttributeType;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+                custom: {
+                    id: string;
+                    name: string | null;
+                    type: import(".prisma/client").$Enums.AttributeType | null;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+            };
+            rental: {
+                tenant?: {
+                    id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                } | undefined;
+                id: string;
+                source: import(".prisma/client").$Enums.RentalSource;
+                agreedPrice: number;
+                pricePeriod: string;
+                duration: number;
+                startedAt: Date;
+                endsAt: Date;
+                status: import(".prisma/client").$Enums.RentalStatus;
+                notes: string | null;
+                offerId: string | null;
+            } | undefined;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -791,6 +1165,40 @@ export declare class PropertyController {
             submittedAt: Date | null;
             approvedAt: Date | null;
             isNegotiable: boolean;
+            attributes: {
+                system: {
+                    id: string;
+                    attributeId: string | null;
+                    name: string;
+                    slug: string;
+                    type: import(".prisma/client").$Enums.AttributeType;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+                custom: {
+                    id: string;
+                    name: string | null;
+                    type: import(".prisma/client").$Enums.AttributeType | null;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+            };
+            rental: {
+                tenant?: {
+                    id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                } | undefined;
+                id: string;
+                source: import(".prisma/client").$Enums.RentalSource;
+                agreedPrice: number;
+                pricePeriod: string;
+                duration: number;
+                startedAt: Date;
+                endsAt: Date;
+                status: import(".prisma/client").$Enums.RentalStatus;
+                notes: string | null;
+                offerId: string | null;
+            } | undefined;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -854,6 +1262,40 @@ export declare class PropertyController {
             submittedAt: Date | null;
             approvedAt: Date | null;
             isNegotiable: boolean;
+            attributes: {
+                system: {
+                    id: string;
+                    attributeId: string | null;
+                    name: string;
+                    slug: string;
+                    type: import(".prisma/client").$Enums.AttributeType;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+                custom: {
+                    id: string;
+                    name: string | null;
+                    type: import(".prisma/client").$Enums.AttributeType | null;
+                    value: import("@prisma/client/runtime/library").JsonValue;
+                }[];
+            };
+            rental: {
+                tenant?: {
+                    id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                } | undefined;
+                id: string;
+                source: import(".prisma/client").$Enums.RentalSource;
+                agreedPrice: number;
+                pricePeriod: string;
+                duration: number;
+                startedAt: Date;
+                endsAt: Date;
+                status: import(".prisma/client").$Enums.RentalStatus;
+                notes: string | null;
+                offerId: string | null;
+            } | undefined;
             images: {
                 id: string;
                 imageUrl: string | null;

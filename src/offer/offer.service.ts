@@ -19,6 +19,7 @@ import {
   resolvePagination,
 } from '../common/dto/pagination.dto';
 import { NOTIFICATION_EVENTS } from '../notification/events/notification.events';
+import { RentalService } from '../rental/rental.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ACTIVE_OFFER_STATUSES,
@@ -54,6 +55,7 @@ export class OfferService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly rentalService: RentalService,
   ) {}
 
   async create(propertyId: string, user: AuthUser, dto: CreateOfferDto) {
@@ -115,6 +117,7 @@ export class OfferService {
             senderId: user.id,
             price: new Prisma.Decimal(dto.price),
             pricePeriod: dto.pricePeriod,
+            duration: dto.duration,
             notes: dto.notes?.trim() || null,
           },
         },
@@ -250,6 +253,7 @@ export class OfferService {
     });
 
     const latest = this.getLatestRound(updated);
+    const rental = await this.rentalService.activateFromAcceptedOffer(updated.id);
 
     this.eventEmitter.emit(NOTIFICATION_EVENTS.PRICE_OFFER_ACCEPTED, {
       customerId: updated.customerId,
@@ -258,9 +262,16 @@ export class OfferService {
       offerId: updated.id,
       price: latest.price.toNumber(),
       pricePeriod: latest.pricePeriod,
+      endsAt: rental.endsAt.toISOString(),
     });
 
-    return this.mapOffer(updated);
+    return {
+      ...this.mapOffer(updated),
+      rental: this.rentalService.mapRentalRecord(rental, {
+        id: user.id,
+        role: user.role,
+      }),
+    };
   }
 
   async reject(offerId: string, user: AuthUser, reason?: string) {
@@ -336,6 +347,7 @@ export class OfferService {
             senderId,
             price: new Prisma.Decimal(dto.price),
             pricePeriod: dto.pricePeriod,
+            duration: dto.duration,
             notes: dto.notes?.trim() || null,
           },
         },
@@ -599,6 +611,7 @@ export class OfferService {
             senderId: latestRound.senderId,
             price: latestRound.price.toNumber(),
             pricePeriod: latestRound.pricePeriod,
+            duration: latestRound.duration,
             notes: latestRound.notes,
             createdAt: latestRound.createdAt,
           }
@@ -609,6 +622,7 @@ export class OfferService {
         senderId: round.senderId,
         price: round.price.toNumber(),
         pricePeriod: round.pricePeriod,
+        duration: round.duration,
         notes: round.notes,
         createdAt: round.createdAt,
       })),

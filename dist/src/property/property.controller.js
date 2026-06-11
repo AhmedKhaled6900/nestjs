@@ -42,8 +42,8 @@ let PropertyController = class PropertyController {
         this.propertyService = propertyService;
         this.propertyImageService = propertyImageService;
     }
-    findApproved(query) {
-        return this.propertyService.findApproved(query);
+    findApproved(query, user) {
+        return this.propertyService.findApproved(query, user ? { id: user.id, role: user.role } : undefined);
     }
     findMine(user, query) {
         return this.propertyService.findMine(user.id, query);
@@ -94,11 +94,13 @@ let PropertyController = class PropertyController {
 exports.PropertyController = PropertyController;
 __decorate([
     (0, permissions_decorator_1.Public)(),
+    (0, permissions_decorator_1.OptionalAuth)(),
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: 'List approved properties (public catalog)' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List approved and rented properties (public catalog)' }),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [query_property_dto_1.QueryPropertyDto]),
+    __metadata("design:paramtypes", [query_property_dto_1.QueryPropertyDto, Object]),
     __metadata("design:returntype", void 0)
 ], PropertyController.prototype, "findApproved", null);
 __decorate([

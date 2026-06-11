@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthUser } from '../auth/interfaces/auth.interface';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -20,16 +22,28 @@ export class AdminPropertyController {
   @RequireRoles('ADMIN')
   @RequirePermissions('property.read')
   @ApiOperation({ summary: 'List all properties (all statuses)' })
-  findAll(@Query() query: QueryOwnerPropertyDto) {
-    return this.propertyService.adminFindAll(query);
+  findAll(
+    @Query() query: QueryOwnerPropertyDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.propertyService.adminFindAll(query, {
+      id: user.id,
+      role: user.role,
+    });
   }
 
   @Get('pending/list')
   @RequireRoles('ADMIN')
   @RequirePermissions('property.review')
   @ApiOperation({ summary: 'List properties pending review (paginated)' })
-  findPending(@Query() query: QueryOwnerPropertyDto) {
-    return this.propertyService.adminFindPending(query);
+  findPending(
+    @Query() query: QueryOwnerPropertyDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.propertyService.adminFindPending(query, {
+      id: user.id,
+      role: user.role,
+    });
   }
 
   @Patch(':id/approve')

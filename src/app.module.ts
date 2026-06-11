@@ -13,6 +13,8 @@ import { NotificationModule } from './notification/notification.module';
 import { AdminModule } from './admin/admin.module';
 import { EngagementModule } from './engagement/engagement.module';
 import { OfferModule } from './offer/offer.module';
+import { RentalModule } from './rental/rental.module';
+import { AttributeModule } from './attribute/attribute.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { OfferModule } from './offer/offer.module';
     AdminModule,
     EngagementModule,
     OfferModule,
+    RentalModule,
+    AttributeModule,
     HealthModule,
   ],
 })

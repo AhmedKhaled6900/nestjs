@@ -8,10 +8,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PropertyModule = void 0;
 const common_1 = require("@nestjs/common");
+const attribute_module_1 = require("../attribute/attribute.module");
 const category_module_1 = require("../category/category.module");
 const upload_module_1 = require("../upload/upload.module");
 const admin_property_controller_1 = require("./admin-property.controller");
-const booking_controller_1 = require("./booking.controller");
 const property_image_service_1 = require("./property-image.service");
 const property_controller_1 = require("./property.controller");
 const property_service_1 = require("./property.service");
@@ -20,12 +20,8 @@ let PropertyModule = class PropertyModule {
 exports.PropertyModule = PropertyModule;
 exports.PropertyModule = PropertyModule = __decorate([
     (0, common_1.Module)({
-        imports: [category_module_1.CategoryModule, upload_module_1.UploadModule],
-        controllers: [
-            property_controller_1.PropertyController,
-            admin_property_controller_1.AdminPropertyController,
-            booking_controller_1.BookingController,
-        ],
+        imports: [category_module_1.CategoryModule, upload_module_1.UploadModule, attribute_module_1.AttributeModule],
+        controllers: [property_controller_1.PropertyController, admin_property_controller_1.AdminPropertyController],
         providers: [property_service_1.PropertyService, property_image_service_1.PropertyImageService],
         exports: [property_service_1.PropertyService],
     })

@@ -43,6 +43,10 @@ const PERMISSIONS = [
   { action: 'offer.read', description: 'Read price offers' },
   { action: 'offer.respond', description: 'Accept, reject, or counter offers (owner)' },
   { action: 'offer.counter', description: 'Counter an offer (customer)' },
+  { action: 'attribute.create', description: 'Create attribute definitions' },
+  { action: 'attribute.read', description: 'Read attribute definitions' },
+  { action: 'attribute.update', description: 'Update attribute definitions and subcategory links' },
+  { action: 'attribute.delete', description: 'Delete attribute definitions' },
 ];
 
 const ROLE_PERMISSIONS: Record<RoleName, string[]> = {

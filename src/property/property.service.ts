@@ -14,8 +14,13 @@ import {
   PropertyPurpose,
   PricePeriod,
   PropertyStatus,
+  AttributeType,
+  RentalSource,
+  RentalStatus,
   RoleName,
 } from '@prisma/client';
+import { buildPropertyRentalPayload, PropertyViewer } from '../rental/rental-payload';
+import { PropertyAttributeService } from '../attribute/property-attribute.service';
 import { CategoryService } from '../category/category.service';
 import {
   buildPaginatedResult,
@@ -43,7 +48,41 @@ type PropertyWithRelations = Property & {
   };
   images: PropertyImage[];
   owner?: { id: string; name: string };
+  rentals?: Array<{
+    id: string;
+    source: RentalSource;
+    agreedPrice: Prisma.Decimal;
+    pricePeriod: PricePeriod;
+    duration: number;
+    startedAt: Date;
+    endsAt: Date;
+    status: RentalStatus;
+    notes: string | null;
+    offerId: string | null;
+    tenantId: string;
+    tenant: {
+      id: string;
+      name: string;
+      email: string | null;
+      phone: string | null;
+    };
+  }>;
+  attributeValues?: Array<{
+    id: string;
+    attributeId: string | null;
+    customName: string | null;
+    customType: AttributeType | null;
+    value: Prisma.JsonValue;
+    attribute: {
+      id: string;
+      name: string;
+      slug: string;
+      type: AttributeType;
+    } | null;
+  }>;
 };
+
+export type { PropertyViewer };
 
 @Injectable()
 export class PropertyService {
@@ -53,6 +92,7 @@ export class PropertyService {
     private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly propertyAttributeService: PropertyAttributeService,
   ) {}
 
   async create(ownerId: string, dto: CreatePropertyDto) {
@@ -69,10 +109,27 @@ export class PropertyService {
       include: this.defaultInclude(),
     });
 
-    return this.mapProperty(property);
+    await this.propertyAttributeService.replaceForProperty(
+      property.id,
+      dto.subcategoryId,
+      {
+        attributes: dto.attributes,
+        customAttributes: dto.customAttributes,
+      },
+    );
+
+    const withAttributes = await this.prisma.property.findUniqueOrThrow({
+      where: { id: property.id },
+      include: this.defaultInclude(),
+    });
+
+    return this.mapProperty(withAttributes);
   }
 
-  async findApproved(query: QueryPropertyDto) {
+  async findApproved(
+    query: QueryPropertyDto,
+    viewer?: PropertyViewer,
+  ) {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     const categoryFilter = await this.categoryService.buildPropertyCategoryFilter(
@@ -80,7 +137,7 @@ export class PropertyService {
     );
 
     const where: Prisma.PropertyWhereInput = {
-      status: PropertyStatus.APPROVED,
+      status: { in: [PropertyStatus.APPROVED, PropertyStatus.RENTED] },
       ...(query.purpose ? { purpose: query.purpose } : {}),
       ...(query.pricePeriod ? { pricePeriod: query.pricePeriod } : {}),
       ...categoryFilter,
@@ -99,7 +156,7 @@ export class PropertyService {
     ]);
 
     return buildPaginatedResult(
-      items.map((item) => this.mapProperty(item)),
+      items.map((item) => this.mapProperty(item, viewer)),
       total,
       page,
       limit,
@@ -131,14 +188,16 @@ export class PropertyService {
     ]);
 
     return buildPaginatedResult(
-      items.map((item) => this.mapProperty(item)),
+      items.map((item) =>
+        this.mapProperty(item, { id: ownerId, role: RoleName.OWNER }),
+      ),
       total,
       page,
       limit,
     );
   }
 
-  async findById(id: string, viewer?: { id: string; role: string }) {
+  async findById(id: string, viewer?: PropertyViewer) {
     const property = await this.prisma.property.findUnique({
       where: { id },
       include: {
@@ -156,13 +215,14 @@ export class PropertyService {
 
     if (
       property.status !== PropertyStatus.APPROVED &&
+      property.status !== PropertyStatus.RENTED &&
       !isOwner &&
       !isAdmin
     ) {
       throw new NotFoundException('Property not found');
     }
 
-    return this.mapProperty(property);
+    return this.mapProperty(property, viewer);
   }
 
   async findSimilar(query: QuerySimilarPropertiesDto) {
@@ -278,7 +338,31 @@ export class PropertyService {
       include: this.defaultInclude(),
     });
 
-    return this.mapProperty(updated);
+    const nextSubcategoryId =
+      dto.subcategoryId ?? dto.categoryId ?? property.categoryId;
+
+    if (
+      dto.attributes !== undefined ||
+      dto.customAttributes !== undefined ||
+      dto.subcategoryId !== undefined ||
+      dto.categoryId !== undefined
+    ) {
+      await this.propertyAttributeService.replaceForProperty(
+        updated.id,
+        nextSubcategoryId,
+        {
+          attributes: dto.attributes,
+          customAttributes: dto.customAttributes,
+        },
+      );
+    }
+
+    const withAttributes = await this.prisma.property.findUniqueOrThrow({
+      where: { id: updated.id },
+      include: this.defaultInclude(),
+    });
+
+    return this.mapProperty(withAttributes);
   }
 
   async remove(propertyId: string, ownerId: string) {
@@ -388,7 +472,7 @@ export class PropertyService {
     );
   }
 
-  async adminFindAll(query: QueryOwnerPropertyDto) {
+  async adminFindAll(query: QueryOwnerPropertyDto, viewer?: PropertyViewer) {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     const categoryFilter = await this.categoryService.buildPropertyCategoryFilter(
@@ -415,14 +499,14 @@ export class PropertyService {
     ]);
 
     return buildPaginatedResult(
-      items.map((item) => this.mapProperty(item)),
+      items.map((item) => this.mapProperty(item, viewer)),
       total,
       page,
       limit,
     );
   }
 
-  async adminFindPending(query: QueryOwnerPropertyDto) {
+  async adminFindPending(query: QueryOwnerPropertyDto, viewer?: PropertyViewer) {
     const { page, limit, skip } = resolvePagination(query.page, query.limit);
 
     const where = { status: PropertyStatus.PENDING };
@@ -442,7 +526,7 @@ export class PropertyService {
     ]);
 
     return buildPaginatedResult(
-      items.map((item) => this.mapProperty(item)),
+      items.map((item) => this.mapProperty(item, viewer)),
       total,
       page,
       limit,
@@ -545,8 +629,14 @@ export class PropertyService {
     return this.configService.get<string>('APP_URL', 'http://localhost:3000');
   }
 
-  mapProperty(property: PropertyWithRelations & { owner?: { id: string; name: string; email?: string | null; phone?: string | null } }) {
+  mapProperty(
+    property: PropertyWithRelations & {
+      owner?: { id: string; name: string; email?: string | null; phone?: string | null };
+    },
+    viewer?: PropertyViewer,
+  ) {
     const appUrl = this.getAppUrl();
+    const activeRental = property.rentals?.[0];
 
     return {
       id: property.id,
@@ -595,6 +685,10 @@ export class PropertyService {
       submittedAt: property.submittedAt,
       approvedAt: property.approvedAt,
       isNegotiable: property.isNegotiable,
+      attributes: this.mapPropertyAttributes(property.attributeValues),
+      rental: activeRental
+        ? buildPropertyRentalPayload(activeRental, viewer, property)
+        : undefined,
       images: property.images
         .sort((a, b) => a.order - b.order)
         .map((image) => ({
@@ -715,6 +809,50 @@ export class PropertyService {
         },
       },
       images: { orderBy: { order: 'asc' as const } },
+      rentals: {
+        where: { status: RentalStatus.ACTIVE },
+        take: 1,
+        include: {
+          tenant: { select: { id: true, name: true, email: true, phone: true } },
+        },
+      },
+      attributeValues: {
+        include: {
+          attribute: {
+            select: { id: true, name: true, slug: true, type: true },
+          },
+        },
+        orderBy: { id: 'asc' as const },
+      },
+    };
+  }
+
+  private mapPropertyAttributes(
+    values: PropertyWithRelations['attributeValues'],
+  ) {
+    if (!values?.length) {
+      return { system: [], custom: [] };
+    }
+
+    return {
+      system: values
+        .filter((item) => item.attributeId && item.attribute)
+        .map((item) => ({
+          id: item.id,
+          attributeId: item.attributeId,
+          name: item.attribute!.name,
+          slug: item.attribute!.slug,
+          type: item.attribute!.type,
+          value: item.value,
+        })),
+      custom: values
+        .filter((item) => !item.attributeId)
+        .map((item) => ({
+          id: item.id,
+          name: item.customName,
+          type: item.customType,
+          value: item.value,
+        })),
     };
   }
 

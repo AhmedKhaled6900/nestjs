@@ -14,6 +14,7 @@ export const NOTIFICATION_EVENTS = {
   PRICE_OFFER_COUNTERED: 'notification.price_offer.countered',
   PRICE_OFFER_EXPIRED: 'notification.price_offer.expired',
   PRICE_OFFER_NEGOTIATING_FAILED: 'notification.price_offer.negotiating_failed',
+  PROPERTY_RENTED: 'notification.property.rented',
 } as const;
 
 export type UserRegisteredEvent = {
@@ -116,4 +117,18 @@ export type PriceOfferNegotiatingFailedEvent = {
   propertyId: string;
   propertyTitle: string;
   offerId: string;
+};
+
+export type PropertyRentedEvent = {
+  ownerUserId: string;
+  tenantId: string;
+  tenantName: string;
+  propertyId: string;
+  propertyTitle: string;
+  rentalId: string;
+  agreedPrice: number;
+  pricePeriod: string;
+  duration: number;
+  endsAt: string;
+  source: string;
 };

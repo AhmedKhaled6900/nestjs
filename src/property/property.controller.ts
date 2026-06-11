@@ -64,10 +64,17 @@ export class PropertyController {
   ) {}
 
   @Public()
+  @OptionalAuth()
   @Get()
-  @ApiOperation({ summary: 'List approved properties (public catalog)' })
-  findApproved(@Query() query: QueryPropertyDto) {
-    return this.propertyService.findApproved(query);
+  @ApiOperation({ summary: 'List approved and rented properties (public catalog)' })
+  findApproved(
+    @Query() query: QueryPropertyDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    return this.propertyService.findApproved(
+      query,
+      user ? { id: user.id, role: user.role } : undefined,
+    );
   }
 
   @Get('my/list')
