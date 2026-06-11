@@ -57,6 +57,11 @@ model User {
   properties   Property[]
   notifications Notification[]
   deviceTokens DeviceToken[]
+  favorites    Favorite[]
+  cartItems    CartItem[]
+  propertyReviews PropertyReview[]
+  propertyComments PropertyComment[]
+  priceOffersAsCustomer PriceOffer[] @relation("CustomerPriceOffers")
 
   @@unique([provider, providerId])
   @@index([roleId])
@@ -196,6 +201,7 @@ model Property {
   ownerId         String
   rejectionReason String?
   videoUrl        String?
+  isNegotiable    Boolean         @default(false)
   submittedAt     DateTime?
   approvedAt      DateTime?
   createdAt       DateTime        @default(now())
@@ -204,6 +210,11 @@ model Property {
   category Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   owner    User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   images   PropertyImage[]
+  favorites Favorite[]
+  cartItems CartItem[]
+  reviews  PropertyReview[]
+  comments PropertyComment[]
+  priceOffers PriceOffer[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -239,6 +250,26 @@ enum NotificationType {
   OWNER_KYC_REJECTED
   PROPERTY_APPROVED
   PROPERTY_REJECTED
+  PRICE_OFFER_RECEIVED
+  PRICE_OFFER_ACCEPTED
+  PRICE_OFFER_REJECTED
+  PRICE_OFFER_COUNTERED
+  PRICE_OFFER_EXPIRED
+  PRICE_OFFER_NEGOTIATING_FAILED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  NEGOTIATING
+  NEGOTIATING_FAIL
+}
+
+enum OfferSenderRole {
+  CUSTOMER
+  OWNER
 }
 
 model Notification {
@@ -270,4 +301,103 @@ model DeviceToken {
 
   @@index([userId])
   @@map("device_tokens")
+}
+
+model Favorite {
+  userId     String
+  propertyId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, propertyId])
+  @@index([userId, createdAt])
+  @@index([propertyId])
+  @@map("favorites")
+}
+
+model CartItem {
+  userId     String
+  propertyId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, propertyId])
+  @@index([userId, createdAt])
+  @@index([propertyId])
+  @@map("cart_items")
+}
+
+model PropertyReview {
+  id         String   @id @default(uuid())
+  propertyId String
+  userId     String
+  rating     Int
+  body       String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@index([propertyId, createdAt])
+  @@index([userId])
+  @@map("property_reviews")
+}
+
+model PropertyComment {
+  id         String   @id @default(uuid())
+  propertyId String
+  userId     String
+  body       String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, createdAt])
+  @@index([userId])
+  @@map("property_comments")
+}
+
+model PriceOffer {
+  id                 String      @id @default(uuid())
+  propertyId         String
+  customerId         String
+  status             OfferStatus @default(PENDING)
+  expiresAt          DateTime
+  customerOfferCount Int         @default(1)
+  ownerOfferCount    Int         @default(0)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  property Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  customer User              @relation("CustomerPriceOffers", fields: [customerId], references: [id], onDelete: Cascade)
+  rounds   PriceOfferRound[]
+
+  @@index([propertyId, status])
+  @@index([customerId, status])
+  @@index([status, expiresAt])
+  @@map("price_offers")
+}
+
+model PriceOfferRound {
+  id          String          @id @default(uuid())
+  offerId     String
+  senderRole  OfferSenderRole
+  senderId    String
+  price       Decimal         @db.Decimal(14, 2)
+  pricePeriod PricePeriod
+  notes       String?         @db.Text
+  createdAt   DateTime        @default(now())
+
+  offer PriceOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId, createdAt])
+  @@map("price_offer_rounds")
 }

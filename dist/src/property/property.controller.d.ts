@@ -1,7 +1,9 @@
 import { AuthUser } from '../auth/interfaces/auth.interface';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyImageDto, UploadPropertyImagesDto } from './dto/property-image.dto';
 import { QueryOwnerPropertyDto, QueryPropertyDto } from './dto/query-property.dto';
+import { QuerySimilarPropertiesDto } from './dto/query-similar-properties.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PropertyImageService } from './property-image.service';
 import { PropertyService } from './property.service';
@@ -59,6 +61,7 @@ export declare class PropertyController {
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
+        isNegotiable: boolean;
         images: {
             id: string;
             imageUrl: string | null;
@@ -118,6 +121,7 @@ export declare class PropertyController {
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
+        isNegotiable: boolean;
         images: {
             id: string;
             imageUrl: string | null;
@@ -127,6 +131,160 @@ export declare class PropertyController {
         createdAt: Date;
         updatedAt: Date;
     }>>;
+    findSimilar(query: QuerySimilarPropertiesDto): Promise<{
+        items: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            parentCategoryId: string | null;
+            parentCategory: {
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+            subcategoryId: string;
+            subcategory: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            videoUrl: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            isNegotiable: boolean;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+        meta: import("../common/dto/pagination.dto").PaginationMeta;
+        criteria: {
+            city: string;
+            subcategoryId: string;
+            bedrooms: {
+                min: number;
+                max: number;
+            } | undefined;
+            price: {
+                min: number;
+                max: number;
+            };
+            purpose: import(".prisma/client").$Enums.PropertyPurpose | null;
+            excludePropertyId: string | null;
+        };
+    }>;
+    findSimilarById(id: string, query: PaginationQueryDto, user?: AuthUser): Promise<{
+        items: {
+            id: string;
+            title: string;
+            description: string;
+            price: number;
+            pricePeriod: import(".prisma/client").$Enums.PricePeriod | null;
+            city: string;
+            area: string;
+            address: string;
+            latitude: number | null;
+            longitude: number | null;
+            bedrooms: number | null;
+            bathrooms: number | null;
+            areaSize: number | null;
+            purpose: import(".prisma/client").$Enums.PropertyPurpose;
+            status: import(".prisma/client").$Enums.PropertyStatus;
+            parentCategoryId: string | null;
+            parentCategory: {
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+            subcategoryId: string;
+            subcategory: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            categoryId: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+                parentId: string | null;
+            };
+            ownerId: string;
+            owner: ({
+                id: string;
+                name: string;
+            } & {
+                id: string;
+                name: string;
+                email?: string | null;
+                phone?: string | null;
+            }) | undefined;
+            rejectionReason: string | null;
+            videoUrl: string | null;
+            submittedAt: Date | null;
+            approvedAt: Date | null;
+            isNegotiable: boolean;
+            images: {
+                id: string;
+                imageUrl: string | null;
+                isPrimary: boolean;
+                order: number;
+            }[];
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+        meta: import("../common/dto/pagination.dto").PaginationMeta;
+        criteria: {
+            city: string;
+            subcategoryId: string;
+            bedrooms: {
+                min: number;
+                max: number;
+            } | undefined;
+            price: {
+                min: number;
+                max: number;
+            };
+            purpose: import(".prisma/client").$Enums.PropertyPurpose | null;
+            excludePropertyId: string | null;
+        };
+    }>;
     findOne(id: string, user?: AuthUser): Promise<{
         id: string;
         title: string;
@@ -177,6 +335,7 @@ export declare class PropertyController {
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
+        isNegotiable: boolean;
         images: {
             id: string;
             imageUrl: string | null;
@@ -236,6 +395,7 @@ export declare class PropertyController {
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
+        isNegotiable: boolean;
         images: {
             id: string;
             imageUrl: string | null;
@@ -295,6 +455,7 @@ export declare class PropertyController {
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
+        isNegotiable: boolean;
         images: {
             id: string;
             imageUrl: string | null;
@@ -365,6 +526,7 @@ export declare class PropertyController {
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
+            isNegotiable: boolean;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -427,6 +589,7 @@ export declare class PropertyController {
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
+            isNegotiable: boolean;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -489,6 +652,7 @@ export declare class PropertyController {
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
+            isNegotiable: boolean;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -563,6 +727,7 @@ export declare class PropertyController {
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
+            isNegotiable: boolean;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -625,6 +790,7 @@ export declare class PropertyController {
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
+            isNegotiable: boolean;
             images: {
                 id: string;
                 imageUrl: string | null;
@@ -687,6 +853,7 @@ export declare class PropertyController {
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
+            isNegotiable: boolean;
             images: {
                 id: string;
                 imageUrl: string | null;

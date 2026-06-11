@@ -6,6 +6,12 @@ import {
   OwnerKycApprovedEvent,
   OwnerKycRejectedEvent,
   OwnerProfileSubmittedEvent,
+  PriceOfferAcceptedEvent,
+  PriceOfferCounteredEvent,
+  PriceOfferExpiredEvent,
+  PriceOfferNegotiatingFailedEvent,
+  PriceOfferReceivedEvent,
+  PriceOfferRejectedEvent,
   PropertyApprovedEvent,
   PropertyRejectedEvent,
   UserEmailVerifiedEvent,
@@ -15,6 +21,12 @@ import {
   buildOwnerKycApprovedNotification,
   buildOwnerKycRejectedNotification,
   buildOwnerProfileSubmittedNotification,
+  buildPriceOfferAcceptedNotification,
+  buildPriceOfferCounteredNotification,
+  buildPriceOfferExpiredNotification,
+  buildPriceOfferNegotiatingFailedNotification,
+  buildPriceOfferReceivedNotification,
+  buildPriceOfferRejectedNotification,
   buildPropertyApprovedNotification,
   buildPropertyRejectedNotification,
   buildUserEmailVerifiedNotification,
@@ -138,5 +150,144 @@ export class NotificationListener {
         reason: payload.reason,
       },
     });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PRICE_OFFER_RECEIVED, { async: true })
+  async handlePriceOfferReceived(payload: PriceOfferReceivedEvent) {
+    const content = buildPriceOfferReceivedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.ownerUserId,
+      type: NotificationType.PRICE_OFFER_RECEIVED,
+      title: content.title,
+      body: content.body,
+      data: {
+        offerId: payload.offerId,
+        propertyId: payload.propertyId,
+        propertyTitle: payload.propertyTitle,
+        customerId: payload.customerId,
+        price: payload.price,
+        pricePeriod: payload.pricePeriod,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PRICE_OFFER_ACCEPTED, { async: true })
+  async handlePriceOfferAccepted(payload: PriceOfferAcceptedEvent) {
+    const content = buildPriceOfferAcceptedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.customerId,
+      type: NotificationType.PRICE_OFFER_ACCEPTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        offerId: payload.offerId,
+        propertyId: payload.propertyId,
+        propertyTitle: payload.propertyTitle,
+        price: payload.price,
+        pricePeriod: payload.pricePeriod,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PRICE_OFFER_REJECTED, { async: true })
+  async handlePriceOfferRejected(payload: PriceOfferRejectedEvent) {
+    const content = buildPriceOfferRejectedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.customerId,
+      type: NotificationType.PRICE_OFFER_REJECTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        offerId: payload.offerId,
+        propertyId: payload.propertyId,
+        propertyTitle: payload.propertyTitle,
+        reason: payload.reason,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PRICE_OFFER_COUNTERED, { async: true })
+  async handlePriceOfferCountered(payload: PriceOfferCounteredEvent) {
+    const content = buildPriceOfferCounteredNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.recipientUserId,
+      type: NotificationType.PRICE_OFFER_COUNTERED,
+      title: content.title,
+      body: content.body,
+      data: {
+        offerId: payload.offerId,
+        propertyId: payload.propertyId,
+        propertyTitle: payload.propertyTitle,
+        senderRole: payload.senderRole,
+        price: payload.price,
+        pricePeriod: payload.pricePeriod,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PRICE_OFFER_EXPIRED, { async: true })
+  async handlePriceOfferExpired(payload: PriceOfferExpiredEvent) {
+    const content = buildPriceOfferExpiredNotification(payload);
+
+    await Promise.all([
+      this.notificationService.create({
+        userId: payload.customerId,
+        type: NotificationType.PRICE_OFFER_EXPIRED,
+        title: content.title,
+        body: content.body,
+        data: {
+          offerId: payload.offerId,
+          propertyId: payload.propertyId,
+          propertyTitle: payload.propertyTitle,
+        },
+      }),
+      this.notificationService.create({
+        userId: payload.ownerUserId,
+        type: NotificationType.PRICE_OFFER_EXPIRED,
+        title: content.title,
+        body: content.body,
+        data: {
+          offerId: payload.offerId,
+          propertyId: payload.propertyId,
+          propertyTitle: payload.propertyTitle,
+        },
+      }),
+    ]);
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PRICE_OFFER_NEGOTIATING_FAILED, { async: true })
+  async handlePriceOfferNegotiatingFailed(
+    payload: PriceOfferNegotiatingFailedEvent,
+  ) {
+    const content = buildPriceOfferNegotiatingFailedNotification(payload);
+
+    await Promise.all([
+      this.notificationService.create({
+        userId: payload.customerId,
+        type: NotificationType.PRICE_OFFER_NEGOTIATING_FAILED,
+        title: content.title,
+        body: content.body,
+        data: {
+          offerId: payload.offerId,
+          propertyId: payload.propertyId,
+          propertyTitle: payload.propertyTitle,
+        },
+      }),
+      this.notificationService.create({
+        userId: payload.ownerUserId,
+        type: NotificationType.PRICE_OFFER_NEGOTIATING_FAILED,
+        title: content.title,
+        body: content.body,
+        data: {
+          offerId: payload.offerId,
+          propertyId: payload.propertyId,
+          propertyTitle: payload.propertyTitle,
+        },
+      }),
+    ]);
   }
 }

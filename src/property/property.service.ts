@@ -27,7 +27,11 @@ import { MAX_PROPERTY_IMAGES } from '../upload/upload.constants';
 import { UploadService } from '../upload/upload.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { QueryOwnerPropertyDto, QueryPropertyDto } from './dto/query-property.dto';
+import { QuerySimilarPropertiesDto } from './dto/query-similar-properties.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
+
+const SIMILAR_BEDROOMS_DELTA = 1;
+const SIMILAR_PRICE_TOLERANCE_RATIO = 1 / 6;
 
 type PropertyWithRelations = Property & {
   category: {
@@ -159,6 +163,91 @@ export class PropertyService {
     }
 
     return this.mapProperty(property);
+  }
+
+  async findSimilar(query: QuerySimilarPropertiesDto) {
+    const subcategoryId = await this.resolveSimilarSubcategoryId(
+      query.subcategoryId,
+      query.type,
+    );
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
+    const criteria = this.buildSimilarCriteria({
+      city: query.city,
+      subcategoryId,
+      bedrooms: query.bedrooms,
+      price: query.price,
+      purpose: query.purpose,
+      excludePropertyId: query.excludePropertyId,
+    });
+
+    const [items, total] = await Promise.all([
+      this.prisma.property.findMany({
+        where: criteria.where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: this.defaultInclude(),
+      }),
+      this.prisma.property.count({ where: criteria.where }),
+    ]);
+
+    const result = buildPaginatedResult(
+      items.map((item) => this.mapProperty(item)),
+      total,
+      page,
+      limit,
+    );
+
+    return {
+      criteria: criteria.filters,
+      ...result,
+    };
+  }
+
+  async findSimilarById(
+    propertyId: string,
+    query: Pick<QuerySimilarPropertiesDto, 'page' | 'limit'>,
+    viewer?: { id: string; role: string },
+  ) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+      select: {
+        id: true,
+        status: true,
+        ownerId: true,
+        city: true,
+        categoryId: true,
+        bedrooms: true,
+        price: true,
+        purpose: true,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
+
+    const isOwner = viewer?.id === property.ownerId;
+    const isAdmin = viewer?.role === RoleName.ADMIN;
+
+    if (
+      property.status !== PropertyStatus.APPROVED &&
+      !isOwner &&
+      !isAdmin
+    ) {
+      throw new NotFoundException('Property not found');
+    }
+
+    return this.findSimilar({
+      city: property.city,
+      subcategoryId: property.categoryId,
+      bedrooms: property.bedrooms ?? undefined,
+      price: property.price.toNumber(),
+      purpose: property.purpose,
+      excludePropertyId: property.id,
+      page: query.page,
+      limit: query.limit,
+    });
   }
 
   async update(propertyId: string, ownerId: string, dto: UpdatePropertyDto) {
@@ -505,6 +594,7 @@ export class PropertyService {
         : null,
       submittedAt: property.submittedAt,
       approvedAt: property.approvedAt,
+      isNegotiable: property.isNegotiable,
       images: property.images
         .sort((a, b) => a.order - b.order)
         .map((image) => ({
@@ -655,6 +745,7 @@ export class PropertyService {
       pricePeriod:
         dto.purpose === PropertyPurpose.RENT ? dto.pricePeriod : null,
       status: PropertyStatus.DRAFT,
+      isNegotiable: dto.isNegotiable ?? false,
       category: { connect: { id: dto.subcategoryId } },
       owner: { connect: { id: ownerId } },
     };
@@ -684,10 +775,99 @@ export class PropertyService {
       ...(dto.purpose !== undefined ? { purpose: dto.purpose } : {}),
       ...(dto.pricePeriod !== undefined ? { pricePeriod: dto.pricePeriod } : {}),
       ...(dto.purpose === PropertyPurpose.SALE ? { pricePeriod: null } : {}),
+      ...(dto.isNegotiable !== undefined ? { isNegotiable: dto.isNegotiable } : {}),
       ...(this.resolveSubcategoryId(dto) !== undefined
         ? { category: { connect: { id: this.resolveSubcategoryId(dto) } } }
         : {}),
     };
+  }
+
+  private buildSimilarCriteria(input: {
+    city: string;
+    subcategoryId: string;
+    bedrooms?: number;
+    price: number;
+    purpose?: PropertyPurpose;
+    excludePropertyId?: string;
+  }) {
+    const priceMin = input.price * (1 - SIMILAR_PRICE_TOLERANCE_RATIO);
+    const priceMax = input.price * (1 + SIMILAR_PRICE_TOLERANCE_RATIO);
+
+    const bedroomsFilter =
+      input.bedrooms !== undefined
+        ? {
+            min: Math.max(0, input.bedrooms - SIMILAR_BEDROOMS_DELTA),
+            max: input.bedrooms + SIMILAR_BEDROOMS_DELTA,
+          }
+        : undefined;
+
+    const where: Prisma.PropertyWhereInput = {
+      status: PropertyStatus.APPROVED,
+      city: { equals: input.city.trim(), mode: 'insensitive' },
+      categoryId: input.subcategoryId,
+      price: {
+        gte: new Prisma.Decimal(priceMin),
+        lte: new Prisma.Decimal(priceMax),
+      },
+      ...(input.purpose ? { purpose: input.purpose } : {}),
+      ...(input.excludePropertyId ? { NOT: { id: input.excludePropertyId } } : {}),
+      ...(bedroomsFilter
+        ? {
+            bedrooms: {
+              gte: bedroomsFilter.min,
+              lte: bedroomsFilter.max,
+            },
+          }
+        : {}),
+    };
+
+    return {
+      where,
+      filters: {
+        city: input.city.trim(),
+        subcategoryId: input.subcategoryId,
+        bedrooms: bedroomsFilter,
+        price: {
+          min: Math.round(priceMin * 100) / 100,
+          max: Math.round(priceMax * 100) / 100,
+        },
+        purpose: input.purpose ?? null,
+        excludePropertyId: input.excludePropertyId ?? null,
+      },
+    };
+  }
+
+  private async resolveSimilarSubcategoryId(
+    subcategoryId?: string,
+    type?: string,
+  ): Promise<string> {
+    if (subcategoryId) {
+      await this.categoryService.assertLeafCategory(subcategoryId);
+      return subcategoryId;
+    }
+
+    if (!type?.trim()) {
+      throw new BadRequestException('subcategoryId or type is required');
+    }
+
+    const normalizedType = type.trim();
+    const category = await this.prisma.category.findFirst({
+      where: {
+        parentId: { not: null },
+        OR: [
+          { slug: normalizedType.toLowerCase().replace(/\s+/g, '-') },
+          { name: { equals: normalizedType, mode: 'insensitive' } },
+          { slug: normalizedType.toLowerCase() },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (!category) {
+      throw new BadRequestException(`Subcategory type "${type}" not found`);
+    }
+
+    return category.id;
   }
 }
 

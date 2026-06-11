@@ -25,6 +25,24 @@ const PERMISSIONS = [
     { action: 'owner.profile.read', description: 'Read own owner profile' },
     { action: 'owner.profile.update', description: 'Update own owner profile' },
     { action: 'owner.review', description: 'Review owner KYC submissions' },
+    { action: 'favorite.create', description: 'Add properties to favorites' },
+    { action: 'favorite.read', description: 'List my favorites' },
+    { action: 'favorite.delete', description: 'Remove from favorites' },
+    { action: 'cart.create', description: 'Add properties to cart' },
+    { action: 'cart.read', description: 'List my cart' },
+    { action: 'cart.delete', description: 'Remove from cart' },
+    { action: 'review.create', description: 'Create property reviews' },
+    { action: 'review.read', description: 'Read property reviews' },
+    { action: 'review.update', description: 'Update own reviews' },
+    { action: 'review.delete', description: 'Delete own reviews' },
+    { action: 'comment.create', description: 'Create property comments' },
+    { action: 'comment.read', description: 'Read property comments' },
+    { action: 'comment.update', description: 'Update own comments' },
+    { action: 'comment.delete', description: 'Delete own comments' },
+    { action: 'offer.create', description: 'Submit price offers' },
+    { action: 'offer.read', description: 'Read price offers' },
+    { action: 'offer.respond', description: 'Accept, reject, or counter offers (owner)' },
+    { action: 'offer.counter', description: 'Counter an offer (customer)' },
 ];
 const ROLE_PERMISSIONS = {
     ADMIN: PERMISSIONS.map((p) => p.action),
@@ -37,9 +55,76 @@ const ROLE_PERMISSIONS = {
         'booking.read',
         'owner.profile.read',
         'owner.profile.update',
+        'offer.read',
+        'offer.respond',
     ],
-    CUSTOMER: ['property.read', 'booking.create', 'booking.cancel', 'booking.read'],
+    CUSTOMER: [
+        'property.read',
+        'booking.create',
+        'booking.cancel',
+        'booking.read',
+        'favorite.create',
+        'favorite.read',
+        'favorite.delete',
+        'cart.create',
+        'cart.read',
+        'cart.delete',
+        'review.create',
+        'review.read',
+        'review.update',
+        'review.delete',
+        'comment.create',
+        'comment.read',
+        'comment.update',
+        'comment.delete',
+        'offer.create',
+        'offer.read',
+        'offer.counter',
+    ],
 };
+async function seedPermissions() {
+    await Promise.all(PERMISSIONS.map((perm) => prisma.permission.upsert({
+        where: { action: perm.action },
+        update: { description: perm.description },
+        create: perm,
+    })));
+}
+async function seedRoles() {
+    await Promise.all(Object.values(client_1.RoleName).map((roleName) => prisma.role.upsert({
+        where: { name: roleName },
+        update: {},
+        create: {
+            name: roleName,
+            description: `${roleName} role`,
+        },
+    })));
+}
+async function seedRolePermissions() {
+    const [roles, permissions] = await Promise.all([
+        prisma.role.findMany(),
+        prisma.permission.findMany(),
+    ]);
+    const roleByName = new Map(roles.map((role) => [role.name, role.id]));
+    const permissionByAction = new Map(permissions.map((permission) => [permission.action, permission.id]));
+    const rows = [];
+    for (const [roleName, actions] of Object.entries(ROLE_PERMISSIONS)) {
+        const roleId = roleByName.get(roleName);
+        if (!roleId) {
+            throw new Error(`Role not found: ${roleName}`);
+        }
+        for (const action of actions) {
+            const permissionId = permissionByAction.get(action);
+            if (!permissionId) {
+                throw new Error(`Permission not found: ${action}`);
+            }
+            rows.push({ roleId, permissionId });
+        }
+    }
+    await prisma.rolePermission.createMany({
+        data: rows,
+        skipDuplicates: true,
+    });
+}
 async function seedAdmin() {
     const seedAdmin = process.env.SEED_ADMIN === 'true';
     if (!seedAdmin) {
@@ -96,67 +181,32 @@ async function seedCategories() {
                 isActive: true,
             },
         });
-        for (const child of main.children) {
-            await prisma.category.upsert({
-                where: { slug: child.slug },
-                update: {
-                    name: child.name,
-                    sortOrder: child.sortOrder,
-                    isActive: true,
-                    parentId: parent.id,
-                },
-                create: {
-                    name: child.name,
-                    slug: child.slug,
-                    sortOrder: child.sortOrder,
-                    isActive: true,
-                    parentId: parent.id,
-                },
-            });
-        }
+        await Promise.all(main.children.map((child) => prisma.category.upsert({
+            where: { slug: child.slug },
+            update: {
+                name: child.name,
+                sortOrder: child.sortOrder,
+                isActive: true,
+                parentId: parent.id,
+            },
+            create: {
+                name: child.name,
+                slug: child.slug,
+                sortOrder: child.sortOrder,
+                isActive: true,
+                parentId: parent.id,
+            },
+        })));
     }
     console.log('Categories seeded: main categories and subcategories.');
 }
 async function main() {
-    for (const perm of PERMISSIONS) {
-        await prisma.permission.upsert({
-            where: { action: perm.action },
-            update: { description: perm.description },
-            create: perm,
-        });
-    }
-    for (const roleName of Object.values(client_1.RoleName)) {
-        const role = await prisma.role.upsert({
-            where: { name: roleName },
-            update: {},
-            create: {
-                name: roleName,
-                description: `${roleName} role`,
-            },
-        });
-        const actions = ROLE_PERMISSIONS[roleName];
-        for (const action of actions) {
-            const permission = await prisma.permission.findUniqueOrThrow({
-                where: { action },
-            });
-            await prisma.rolePermission.upsert({
-                where: {
-                    roleId_permissionId: {
-                        roleId: role.id,
-                        permissionId: permission.id,
-                    },
-                },
-                update: {},
-                create: {
-                    roleId: role.id,
-                    permissionId: permission.id,
-                },
-            });
-        }
-    }
+    await seedPermissions();
+    await seedRoles();
+    await seedRolePermissions();
     await seedCategories();
     await seedAdmin();
-    console.log('Seed completed: roles, permissions (including category.*), categories, and role-permission mappings.');
+    console.log('Seed completed: roles, permissions, categories, and role-permission mappings.');
     console.log('ADMIN role has all permissions:', PERMISSIONS.map((p) => p.action).join(', '));
 }
 main()

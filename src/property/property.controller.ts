@@ -26,6 +26,7 @@ import { memoryStorage } from 'multer';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OptionalAuth, Public, RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { AuthUser } from '../auth/interfaces/auth.interface';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import {
   MAX_PROPERTY_IMAGE_SIZE_BYTES,
   MAX_PROPERTY_IMAGES,
@@ -39,6 +40,7 @@ import {
   UploadPropertyVideoDto,
 } from './dto/property-image.dto';
 import { QueryOwnerPropertyDto, QueryPropertyDto } from './dto/query-property.dto';
+import { QuerySimilarPropertiesDto } from './dto/query-similar-properties.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PropertyImageService } from './property-image.service';
 import { PropertyService } from './property.service';
@@ -77,6 +79,39 @@ export class PropertyController {
     @Query() query: QueryOwnerPropertyDto,
   ) {
     return this.propertyService.findMine(user.id, query);
+  }
+
+  @Public()
+  @Get('similar')
+  @ApiOperation({
+    summary: 'Similar properties (public)',
+    description:
+      'Matches: same city, same subcategory (type), bedrooms ±1, price ±16.67%. ' +
+      'Provide subcategoryId or type (slug/name e.g. apartment).',
+  })
+  findSimilar(@Query() query: QuerySimilarPropertiesDto) {
+    return this.propertyService.findSimilar(query);
+  }
+
+  @Public()
+  @OptionalAuth()
+  @Get(':id/similar')
+  @ApiOperation({
+    summary: 'Similar properties for a listing',
+    description:
+      'Uses the property city, subcategory, bedrooms, and price. Excludes the current property.',
+  })
+  @ApiParam({ name: 'id', example: 'uuid-here' })
+  findSimilarById(
+    @Param('id') id: string,
+    @Query() query: PaginationQueryDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    return this.propertyService.findSimilarById(
+      id,
+      query,
+      user ? { id: user.id, role: user.role } : undefined,
+    );
   }
 
   @Public()

@@ -2,6 +2,12 @@ import {
   OwnerKycApprovedEvent,
   OwnerKycRejectedEvent,
   OwnerProfileSubmittedEvent,
+  PriceOfferAcceptedEvent,
+  PriceOfferCounteredEvent,
+  PriceOfferExpiredEvent,
+  PriceOfferNegotiatingFailedEvent,
+  PriceOfferReceivedEvent,
+  PriceOfferRejectedEvent,
   PropertyApprovedEvent,
   PropertyRejectedEvent,
   UserEmailVerifiedEvent,
@@ -73,5 +79,62 @@ export function buildPropertyRejectedNotification(
   return {
     title: 'تم رفض عقارك',
     body: `رفض المسؤول عقارك «${payload.propertyTitle}». السبب: ${payload.reason}`,
+  };
+}
+
+export function buildPriceOfferReceivedNotification(
+  payload: PriceOfferReceivedEvent,
+): NotificationContent {
+  return {
+    title: 'عرض سعر جديد',
+    body: `قدّم ${payload.customerName} عرضًا على «${payload.propertyTitle}»: ${payload.price} / ${payload.pricePeriod}`,
+  };
+}
+
+export function buildPriceOfferAcceptedNotification(
+  payload: PriceOfferAcceptedEvent,
+): NotificationContent {
+  return {
+    title: 'تم قبول عرضك',
+    body: `وافق المالك على عرضك لـ «${payload.propertyTitle}» بسعر ${payload.price} / ${payload.pricePeriod}`,
+  };
+}
+
+export function buildPriceOfferRejectedNotification(
+  payload: PriceOfferRejectedEvent,
+): NotificationContent {
+  return {
+    title: 'تم رفض عرضك',
+    body: payload.reason
+      ? `رفض المالك عرضك على «${payload.propertyTitle}». السبب: ${payload.reason}`
+      : `رفض المالك عرضك على «${payload.propertyTitle}».`,
+  };
+}
+
+export function buildPriceOfferCounteredNotification(
+  payload: PriceOfferCounteredEvent,
+): NotificationContent {
+  const actor = payload.senderRole === 'OWNER' ? 'المالك' : 'العميل';
+  return {
+    title: 'عرض سعر مضاد',
+    body: `قدّم ${actor} عرضًا مضادًا على «${payload.propertyTitle}»: ${payload.price} / ${payload.pricePeriod}`,
+  };
+}
+
+export function buildPriceOfferExpiredNotification(
+  payload: PriceOfferExpiredEvent,
+): NotificationContent {
+  return {
+    title: 'انتهت صلاحية العرض',
+    body: `انتهت صلاحية عرض السعر على «${payload.propertyTitle}» بعد 7 أيام دون رد.`,
+  };
+}
+
+export function buildPriceOfferNegotiatingFailedNotification(
+  payload: PriceOfferNegotiatingFailedEvent,
+): NotificationContent {
+  return {
+    title: 'تعذّرت المفاوضة',
+    body: `توقفت المفاوضة على «${payload.propertyTitle}» بعد الوصول للحد الأقصى من العروض (3 لكل طرف).`,
   };
 }

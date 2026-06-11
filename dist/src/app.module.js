@@ -20,6 +20,8 @@ const owner_module_1 = require("./owner/owner.module");
 const category_module_1 = require("./category/category.module");
 const notification_module_1 = require("./notification/notification.module");
 const admin_module_1 = require("./admin/admin.module");
+const engagement_module_1 = require("./engagement/engagement.module");
+const offer_module_1 = require("./offer/offer.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -44,6 +46,8 @@ exports.AppModule = AppModule = __decorate([
             category_module_1.CategoryModule,
             notification_module_1.NotificationModule,
             admin_module_1.AdminModule,
+            engagement_module_1.EngagementModule,
+            offer_module_1.OfferModule,
             health_module_1.HealthModule,
         ],
     })

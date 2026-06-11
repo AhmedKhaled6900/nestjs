@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PropertyPurpose, PricePeriod } from '@prisma/client';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -106,4 +107,12 @@ export class CreatePropertyDto {
   })
   @IsUUID()
   subcategoryId!: string;
+
+  @ApiPropertyOptional({
+    default: false,
+    description: 'Whether customers can send price offers on this listing',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isNegotiable?: boolean;
 }

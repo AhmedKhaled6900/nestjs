@@ -8,6 +8,12 @@ export const NOTIFICATION_EVENTS = {
   OWNER_KYC_REJECTED: 'notification.owner.kyc_rejected',
   PROPERTY_APPROVED: 'notification.property.approved',
   PROPERTY_REJECTED: 'notification.property.rejected',
+  PRICE_OFFER_RECEIVED: 'notification.price_offer.received',
+  PRICE_OFFER_ACCEPTED: 'notification.price_offer.accepted',
+  PRICE_OFFER_REJECTED: 'notification.price_offer.rejected',
+  PRICE_OFFER_COUNTERED: 'notification.price_offer.countered',
+  PRICE_OFFER_EXPIRED: 'notification.price_offer.expired',
+  PRICE_OFFER_NEGOTIATING_FAILED: 'notification.price_offer.negotiating_failed',
 } as const;
 
 export type UserRegisteredEvent = {
@@ -56,4 +62,58 @@ export type PropertyRejectedEvent = {
   propertyId: string;
   propertyTitle: string;
   reason: string;
+};
+
+export type PriceOfferReceivedEvent = {
+  ownerUserId: string;
+  customerId: string;
+  customerName: string;
+  propertyId: string;
+  propertyTitle: string;
+  offerId: string;
+  price: number;
+  pricePeriod: string;
+};
+
+export type PriceOfferAcceptedEvent = {
+  customerId: string;
+  propertyId: string;
+  propertyTitle: string;
+  offerId: string;
+  price: number;
+  pricePeriod: string;
+};
+
+export type PriceOfferRejectedEvent = {
+  customerId: string;
+  propertyId: string;
+  propertyTitle: string;
+  offerId: string;
+  reason: string | null;
+};
+
+export type PriceOfferCounteredEvent = {
+  recipientUserId: string;
+  senderRole: string;
+  propertyId: string;
+  propertyTitle: string;
+  offerId: string;
+  price: number;
+  pricePeriod: string;
+};
+
+export type PriceOfferExpiredEvent = {
+  customerId: string;
+  ownerUserId: string;
+  propertyId: string;
+  propertyTitle: string;
+  offerId: string;
+};
+
+export type PriceOfferNegotiatingFailedEvent = {
+  customerId: string;
+  ownerUserId: string;
+  propertyId: string;
+  propertyTitle: string;
+  offerId: string;
 };

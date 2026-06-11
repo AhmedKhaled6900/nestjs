@@ -20,10 +20,12 @@ const platform_express_2 = require("@nestjs/platform-express");
 const multer_1 = require("multer");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const permissions_decorator_1 = require("../auth/decorators/permissions.decorator");
+const pagination_dto_1 = require("../common/dto/pagination.dto");
 const upload_constants_1 = require("../upload/upload.constants");
 const create_property_dto_1 = require("./dto/create-property.dto");
 const property_image_dto_1 = require("./dto/property-image.dto");
 const query_property_dto_1 = require("./dto/query-property.dto");
+const query_similar_properties_dto_1 = require("./dto/query-similar-properties.dto");
 const update_property_dto_1 = require("./dto/update-property.dto");
 const property_image_service_1 = require("./property-image.service");
 const property_service_1 = require("./property.service");
@@ -45,6 +47,12 @@ let PropertyController = class PropertyController {
     }
     findMine(user, query) {
         return this.propertyService.findMine(user.id, query);
+    }
+    findSimilar(query) {
+        return this.propertyService.findSimilar(query);
+    }
+    findSimilarById(id, query, user) {
+        return this.propertyService.findSimilarById(id, query, user ? { id: user.id, role: user.role } : undefined);
     }
     findOne(id, user) {
         return this.propertyService.findById(id, user ? { id: user.id, role: user.role } : undefined);
@@ -104,6 +112,35 @@ __decorate([
     __metadata("design:paramtypes", [Object, query_property_dto_1.QueryOwnerPropertyDto]),
     __metadata("design:returntype", void 0)
 ], PropertyController.prototype, "findMine", null);
+__decorate([
+    (0, permissions_decorator_1.Public)(),
+    (0, common_1.Get)('similar'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Similar properties (public)',
+        description: 'Matches: same city, same subcategory (type), bedrooms ±1, price ±16.67%. ' +
+            'Provide subcategoryId or type (slug/name e.g. apartment).',
+    }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [query_similar_properties_dto_1.QuerySimilarPropertiesDto]),
+    __metadata("design:returntype", void 0)
+], PropertyController.prototype, "findSimilar", null);
+__decorate([
+    (0, permissions_decorator_1.Public)(),
+    (0, permissions_decorator_1.OptionalAuth)(),
+    (0, common_1.Get)(':id/similar'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Similar properties for a listing',
+        description: 'Uses the property city, subcategory, bedrooms, and price. Excludes the current property.',
+    }),
+    (0, swagger_1.ApiParam)({ name: 'id', example: 'uuid-here' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, pagination_dto_1.PaginationQueryDto, Object]),
+    __metadata("design:returntype", void 0)
+], PropertyController.prototype, "findSimilarById", null);
 __decorate([
     (0, permissions_decorator_1.Public)(),
     (0, permissions_decorator_1.OptionalAuth)(),

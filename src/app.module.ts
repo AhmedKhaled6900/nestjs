@@ -11,6 +11,8 @@ import { OwnerModule } from './owner/owner.module';
 import { CategoryModule } from './category/category.module';
 import { NotificationModule } from './notification/notification.module';
 import { AdminModule } from './admin/admin.module';
+import { EngagementModule } from './engagement/engagement.module';
+import { OfferModule } from './offer/offer.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { AdminModule } from './admin/admin.module';
     CategoryModule,
     NotificationModule,
     AdminModule,
+    EngagementModule,
+    OfferModule,
     HealthModule,
   ],
 })
