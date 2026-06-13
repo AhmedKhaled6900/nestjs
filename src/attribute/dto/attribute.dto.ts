@@ -10,7 +10,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   Matches,
   MaxLength,
   Min,
@@ -112,8 +111,9 @@ export class QueryAttributeSelectMenuDto {
 }
 
 export class SubcategoryAttributeLinkDto {
-  @ApiProperty({ example: 'uuid-of-attribute' })
-  @IsUUID()
+  @ApiProperty({ example: 'clxyz123attributeid' })
+  @IsString()
+  @IsNotEmpty()
   attributeId!: string;
 
   @ApiPropertyOptional({ default: false })
@@ -138,8 +138,9 @@ export class SyncSubcategoryAttributesDto {
 }
 
 export class PropertyAttributeValueInputDto {
-  @ApiProperty({ example: 'uuid-of-system-attribute' })
-  @IsUUID()
+  @ApiProperty({ example: 'clxyz123attributeid' })
+  @IsString()
+  @IsNotEmpty()
   attributeId!: string;
 
   @ApiProperty({
