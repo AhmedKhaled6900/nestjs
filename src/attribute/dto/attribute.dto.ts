@@ -3,6 +3,7 @@ import { AttributeScope, AttributeType } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
+  Allow,
   IsArray,
   IsBoolean,
   IsEnum,
@@ -147,6 +148,7 @@ export class PropertyAttributeValueInputDto {
     description: 'Value shape depends on attribute type (string, number, boolean, array)',
     example: true,
   })
+  @Allow()
   value!: unknown;
 }
 
@@ -170,6 +172,7 @@ export class PropertyCustomAttributeInputDto {
   options?: string[];
 
   @ApiProperty({ example: 'Available on weekends only' })
+  @Allow()
   value!: unknown;
 }
 
