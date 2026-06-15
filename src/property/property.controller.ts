@@ -168,7 +168,11 @@ export class PropertyController {
   @Delete(':id')
   @RequirePermissions('property.delete')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Delete property (DRAFT or REJECTED only)' })
+  @ApiOperation({
+    summary: 'Delete my property (any status including approved)',
+    description:
+      'Permanently removes the property. Editable fields are only changeable while DRAFT or REJECTED.',
+  })
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.propertyService.remove(id, user.id);
   }

@@ -168,6 +168,7 @@ export class PropertyService {
 
     const categoryFilter = await this.categoryService.buildPropertyCategoryFilter(
       query,
+      { strict: false },
     );
 
     const where: Prisma.PropertyWhereInput = {
@@ -366,8 +367,79 @@ export class PropertyService {
   }
 
   async remove(propertyId: string, ownerId: string) {
-    const property = await this.findOwnedEditableProperty(propertyId, ownerId);
+    const property = await this.findOwnedProperty(propertyId, ownerId);
+    await this.deletePropertyRecord(property);
 
+    return { message: 'Property deleted successfully' };
+  }
+
+  async adminRemove(propertyId: string) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+      include: { images: { orderBy: { order: 'asc' } } },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
+
+    await this.deletePropertyRecord(property);
+
+    return { message: 'Property deleted successfully' };
+  }
+
+  async adminSuspend(propertyId: string, reason?: string) {
+    const property = await this.findPropertyOrFail(propertyId);
+
+    if (property.status === PropertyStatus.SUSPENDED) {
+      throw new BadRequestException('Property is already suspended');
+    }
+
+    const updated = await this.prisma.property.update({
+      where: { id: propertyId },
+      data: {
+        status: PropertyStatus.SUSPENDED,
+        suspensionReason: reason?.trim() || null,
+        suspendedAt: new Date(),
+      },
+      include: this.defaultInclude(),
+    });
+
+    return {
+      message: 'Property suspended successfully',
+      property: this.mapProperty(updated),
+    };
+  }
+
+  async adminReactivate(propertyId: string) {
+    const property = await this.findPropertyOrFail(propertyId);
+
+    if (property.status !== PropertyStatus.SUSPENDED) {
+      throw new BadRequestException('Only suspended properties can be reactivated');
+    }
+
+    const updated = await this.prisma.property.update({
+      where: { id: propertyId },
+      data: {
+        status: PropertyStatus.APPROVED,
+        suspensionReason: null,
+        suspendedAt: null,
+        approvedAt: property.approvedAt ?? new Date(),
+      },
+      include: this.defaultInclude(),
+    });
+
+    return {
+      message: 'Property reactivated successfully',
+      property: this.mapProperty(updated),
+    };
+  }
+
+  private async deletePropertyRecord(property: {
+    id: string;
+    images: { imageUrl: string }[];
+    videoUrl: string | null;
+  }) {
     for (const image of property.images) {
       await this.uploadService.deleteLocalFile(image.imageUrl);
     }
@@ -375,8 +447,6 @@ export class PropertyService {
     await this.uploadService.deleteLocalFile(property.videoUrl);
 
     await this.prisma.property.delete({ where: { id: property.id } });
-
-    return { message: 'Property deleted successfully' };
   }
 
   async uploadVideo(
@@ -477,6 +547,7 @@ export class PropertyService {
 
     const categoryFilter = await this.categoryService.buildPropertyCategoryFilter(
       query,
+      { strict: false },
     );
 
     const where: Prisma.PropertyWhereInput = {
@@ -679,6 +750,8 @@ export class PropertyService {
       ownerId: property.ownerId,
       owner: property.owner ?? undefined,
       rejectionReason: property.rejectionReason,
+      suspensionReason: property.suspensionReason,
+      suspendedAt: property.suspendedAt,
       videoUrl: property.videoUrl
         ? this.uploadService.toPublicUrl(property.videoUrl, appUrl)
         : null,

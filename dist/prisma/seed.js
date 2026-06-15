@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.seedDatabase = seedDatabase;
 const client_1 = require("@prisma/client");
 const bcrypt = require("bcrypt");
 const category_seed_data_1 = require("./category.seed-data");
@@ -204,7 +205,7 @@ async function seedCategories() {
     }
     console.log('Categories seeded: main categories and subcategories.');
 }
-async function main() {
+async function seedDatabase() {
     await seedPermissions();
     await seedRoles();
     await seedRolePermissions();
@@ -213,12 +214,17 @@ async function main() {
     console.log('Seed completed: roles, permissions, categories, and role-permission mappings.');
     console.log('ADMIN role has all permissions:', PERMISSIONS.map((p) => p.action).join(', '));
 }
-main()
-    .catch((e) => {
-    console.error(e);
-    process.exit(1);
-})
-    .finally(async () => {
-    await prisma.$disconnect();
-});
+async function main() {
+    await seedDatabase();
+}
+if (require.main === module) {
+    main()
+        .catch((e) => {
+        console.error(e);
+        process.exit(1);
+    })
+        .finally(async () => {
+        await prisma.$disconnect();
+    });
+}
 //# sourceMappingURL=seed.js.map

@@ -58,6 +58,8 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        suspensionReason: string | null;
+        suspendedAt: Date | null;
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
@@ -152,6 +154,8 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        suspensionReason: string | null;
+        suspendedAt: Date | null;
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
@@ -247,6 +251,8 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            suspensionReason: string | null;
+            suspendedAt: Date | null;
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
@@ -358,6 +364,8 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            suspensionReason: string | null;
+            suspendedAt: Date | null;
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
@@ -468,6 +476,8 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        suspensionReason: string | null;
+        suspendedAt: Date | null;
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
@@ -562,6 +572,8 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        suspensionReason: string | null;
+        suspendedAt: Date | null;
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
@@ -656,6 +668,8 @@ export declare class PropertyController {
             phone?: string | null;
         }) | undefined;
         rejectionReason: string | null;
+        suspensionReason: string | null;
+        suspendedAt: Date | null;
         videoUrl: string | null;
         submittedAt: Date | null;
         approvedAt: Date | null;
@@ -761,6 +775,8 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            suspensionReason: string | null;
+            suspendedAt: Date | null;
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
@@ -858,6 +874,8 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            suspensionReason: string | null;
+            suspendedAt: Date | null;
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
@@ -955,6 +973,8 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            suspensionReason: string | null;
+            suspendedAt: Date | null;
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
@@ -1064,6 +1084,8 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            suspensionReason: string | null;
+            suspendedAt: Date | null;
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
@@ -1161,6 +1183,8 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            suspensionReason: string | null;
+            suspendedAt: Date | null;
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;
@@ -1258,6 +1282,8 @@ export declare class PropertyController {
                 phone?: string | null;
             }) | undefined;
             rejectionReason: string | null;
+            suspensionReason: string | null;
+            suspendedAt: Date | null;
             videoUrl: string | null;
             submittedAt: Date | null;
             approvedAt: Date | null;

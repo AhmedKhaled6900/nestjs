@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:reset": "ts-node prisma/reset.ts",
     "prisma:seed:prod": "node dist/prisma/seed.js",
     "openapi:export": "ts-node scripts/export-openapi.ts",
     "docker:prod:up": "docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build",

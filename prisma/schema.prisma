@@ -161,6 +161,7 @@ enum PropertyStatus {
   REJECTED
   SOLD
   RENTED
+  SUSPENDED
 }
 
 model Category {
@@ -203,6 +204,8 @@ model Property {
   categoryId      String
   ownerId         String
   rejectionReason String?
+  suspensionReason String?
+  suspendedAt     DateTime?
   videoUrl        String?
   isNegotiable    Boolean         @default(false)
   submittedAt     DateTime?

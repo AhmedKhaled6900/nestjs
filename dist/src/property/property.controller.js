@@ -189,7 +189,10 @@ __decorate([
     (0, common_1.Delete)(':id'),
     (0, permissions_decorator_1.RequirePermissions)('property.delete'),
     (0, swagger_1.ApiBearerAuth)('access-token'),
-    (0, swagger_1.ApiOperation)({ summary: 'Delete property (DRAFT or REJECTED only)' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Delete my property (any status including approved)',
+        description: 'Permanently removes the property. Editable fields are only changeable while DRAFT or REJECTED.',
+    }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),

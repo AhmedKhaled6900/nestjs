@@ -242,7 +242,7 @@ async function seedCategories() {
   console.log('Categories seeded: main categories and subcategories.');
 }
 
-async function main() {
+async function seedDatabase() {
   await seedPermissions();
   await seedRoles();
   await seedRolePermissions();
@@ -258,11 +258,19 @@ async function main() {
   );
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+async function main() {
+  await seedDatabase();
+}
+
+export { seedDatabase };
+
+if (require.main === module) {
+  main()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

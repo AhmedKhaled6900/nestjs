@@ -199,29 +199,44 @@ export class CategoryService {
     }
   }
 
-  async buildPropertyCategoryFilter(query: {
-    parentCategoryId?: string;
-    subcategoryId?: string;
-    categoryId?: string;
-  }): Promise<Prisma.PropertyWhereInput> {
+  async buildPropertyCategoryFilter(
+    query: {
+      parentCategoryId?: string;
+      subcategoryId?: string;
+      categoryId?: string;
+    },
+    options: { strict?: boolean } = { strict: true },
+  ): Promise<Prisma.PropertyWhereInput> {
+    const strict = options.strict !== false;
     const subId = query.subcategoryId ?? query.categoryId;
 
     if (subId && query.parentCategoryId) {
-      await this.assertSubcategoryUnderParent(subId, query.parentCategoryId);
+      if (strict) {
+        await this.assertSubcategoryUnderParent(subId, query.parentCategoryId);
+      }
       return { categoryId: subId };
     }
 
     if (subId) {
-      await this.assertLeafCategory(subId);
+      if (strict) {
+        await this.assertLeafCategory(subId);
+      }
       return { categoryId: subId };
     }
 
     if (query.parentCategoryId) {
-      await this.assertMainCategory(query.parentCategoryId);
+      if (strict) {
+        await this.assertMainCategory(query.parentCategoryId);
+        return {
+          category: {
+            parentId: query.parentCategoryId,
+            isActive: true,
+          },
+        };
+      }
       return {
         category: {
           parentId: query.parentCategoryId,
-          isActive: true,
         },
       };
     }
