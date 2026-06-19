@@ -1,6 +1,9 @@
 import { PrismaClient, RoleName, AuthProvider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { CATEGORY_SEED } from './category.seed-data';
+import { SERVICE_CATEGORY_SEED } from './service-category.seed-data';
+
+import { seedDemoSite } from './demo.seed';
 
 const prisma = new PrismaClient();
 
@@ -47,6 +50,24 @@ const PERMISSIONS = [
   { action: 'attribute.read', description: 'Read attribute definitions' },
   { action: 'attribute.update', description: 'Update attribute definitions and subcategory links' },
   { action: 'attribute.delete', description: 'Delete attribute definitions' },
+  { action: 'provider.profile.read', description: 'Read own service provider profile' },
+  { action: 'provider.profile.update', description: 'Update own service provider profile' },
+  { action: 'provider.coverage.manage', description: 'Manage service coverage areas' },
+  { action: 'provider.listing.manage', description: 'Manage service listings' },
+  { action: 'provider.order.read', description: 'Read provider orders' },
+  { action: 'provider.order.manage', description: 'Accept/reject/update provider orders' },
+  { action: 'provider.lead.read', description: 'Read provider leads' },
+  { action: 'provider.lead.manage', description: 'Update provider lead status' },
+  { action: 'provider.dashboard.read', description: 'Read provider dashboard stats' },
+  { action: 'provider.promotion.manage', description: 'Manage paid provider promotions' },
+  { action: 'service.read', description: 'Browse service providers and listings' },
+  { action: 'service.order.create', description: 'Place food service orders' },
+  { action: 'service.order.read', description: 'Read own service orders' },
+  { action: 'service.lead.create', description: 'Submit transport service leads' },
+  { action: 'service.lead.read', description: 'Read own service leads' },
+  { action: 'provider.review', description: 'Review and approve service providers' },
+  { action: 'service.category.read', description: 'Read service categories (admin)' },
+  { action: 'service.category.manage', description: 'Manage service categories and commission rates' },
 ];
 
 const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
@@ -85,6 +106,24 @@ const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     'offer.create',
     'offer.read',
     'offer.counter',
+    'service.read',
+    'service.order.create',
+    'service.order.read',
+    'service.lead.create',
+    'service.lead.read',
+  ],
+  SERVICE_PROVIDER: [
+    'provider.profile.read',
+    'provider.profile.update',
+    'provider.coverage.manage',
+    'provider.listing.manage',
+    'provider.order.read',
+    'provider.order.manage',
+    'provider.lead.read',
+    'provider.lead.manage',
+    'provider.dashboard.read',
+    'provider.promotion.manage',
+    'service.read',
   ],
 };
 
@@ -242,15 +281,42 @@ async function seedCategories() {
   console.log('Categories seeded: main categories and subcategories.');
 }
 
+async function seedServiceCategories() {
+  for (const category of SERVICE_CATEGORY_SEED) {
+    await prisma.serviceCategory.upsert({
+      where: { slug: category.slug },
+      update: {
+        name: category.name,
+        description: category.description,
+        sortOrder: category.sortOrder,
+        commissionRate: category.commissionRate,
+        isActive: true,
+      },
+      create: {
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        sortOrder: category.sortOrder,
+        commissionRate: category.commissionRate,
+        isActive: true,
+      },
+    });
+  }
+
+  console.log('Service categories seeded: restaurants, cafes, home-cooking, transport.');
+}
+
 async function seedDatabase() {
   await seedPermissions();
   await seedRoles();
   await seedRolePermissions();
   await seedCategories();
+  await seedServiceCategories();
   await seedAdmin();
+  await seedDemoSite(prisma);
 
   console.log(
-    'Seed completed: roles, permissions, categories, and role-permission mappings.',
+    'Seed completed: roles, permissions, categories, demo site (if SEED_DEMO).',
   );
   console.log(
     'ADMIN role has all permissions:',

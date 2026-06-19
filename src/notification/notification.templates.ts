@@ -13,6 +13,17 @@ import {
   PropertyRejectedEvent,
   UserEmailVerifiedEvent,
   UserRegisteredEvent,
+  ServiceProviderSubmittedEvent,
+  ServiceProviderApprovedEvent,
+  ServiceProviderRejectedEvent,
+  ServiceProviderSuspendedEvent,
+  ServiceOrderReceivedEvent,
+  ServiceOrderAcceptedEvent,
+  ServiceOrderRejectedEvent,
+  ServiceOrderStatusUpdatedEvent,
+  ServiceLeadReceivedEvent,
+  ServiceLeadStatusUpdatedEvent,
+  ProviderPromotionActivatedEvent,
 } from './events/notification.events';
 
 type NotificationContent = {
@@ -146,5 +157,106 @@ export function buildPropertyRentedNotification(
   return {
     title: 'تم تأجير الوحدة',
     body: `تم تأجير «${payload.propertyTitle}» — السعر المتفق ${payload.agreedPrice} / ${payload.pricePeriod} لمدة ${payload.duration} حتى ${payload.endsAt.slice(0, 10)}`,
+  };
+}
+
+export function buildServiceProviderSubmittedNotification(
+  payload: ServiceProviderSubmittedEvent,
+): NotificationContent {
+  return {
+    title: 'طلب مراجعة مقدم خدمة',
+    body: `أرسل ${payload.providerName} (${payload.businessName}) ملفه للمراجعة`,
+  };
+}
+
+export function buildServiceProviderApprovedNotification(
+  _payload: ServiceProviderApprovedEvent,
+): NotificationContent {
+  return {
+    title: 'تمت الموافقة على حسابك',
+    body: 'وافق المسؤول على ملف مقدم الخدمة. يمكنك الآن نشر الإعلانات واستقبال الطلبات.',
+  };
+}
+
+export function buildServiceProviderRejectedNotification(
+  payload: ServiceProviderRejectedEvent,
+): NotificationContent {
+  return {
+    title: 'تم رفض طلبك',
+    body: `رفض المسؤول ملف مقدم الخدمة. السبب: ${payload.reason}`,
+  };
+}
+
+export function buildServiceProviderSuspendedNotification(
+  payload: ServiceProviderSuspendedEvent,
+): NotificationContent {
+  return {
+    title: 'تم تعليق حسابك',
+    body: `علّق المسؤول حساب مقدم الخدمة. السبب: ${payload.reason}`,
+  };
+}
+
+export function buildServiceOrderReceivedNotification(
+  payload: ServiceOrderReceivedEvent,
+): NotificationContent {
+  return {
+    title: 'طلب جديد',
+    body: `طلب جديد من ${payload.customerName} — «${payload.listingTitle}» (${payload.subtotal})`,
+  };
+}
+
+export function buildServiceOrderAcceptedNotification(
+  payload: ServiceOrderAcceptedEvent,
+): NotificationContent {
+  return {
+    title: 'تم قبول طلبك',
+    body: `قبل مقدم الخدمة طلبك «${payload.listingTitle}»`,
+  };
+}
+
+export function buildServiceOrderRejectedNotification(
+  payload: ServiceOrderRejectedEvent,
+): NotificationContent {
+  return {
+    title: 'تم رفض طلبك',
+    body: payload.reason
+      ? `رفض مقدم الخدمة طلب «${payload.listingTitle}». السبب: ${payload.reason}`
+      : `رفض مقدم الخدمة طلب «${payload.listingTitle}»`,
+  };
+}
+
+export function buildServiceOrderStatusUpdatedNotification(
+  payload: ServiceOrderStatusUpdatedEvent,
+): NotificationContent {
+  return {
+    title: 'تحديث حالة الطلب',
+    body: `طلب «${payload.listingTitle}» — الحالة: ${payload.status}`,
+  };
+}
+
+export function buildServiceLeadReceivedNotification(
+  payload: ServiceLeadReceivedEvent,
+): NotificationContent {
+  return {
+    title: 'طلب نقل جديد',
+    body: `طلب نقل من ${payload.customerName} إلى ${payload.destination}`,
+  };
+}
+
+export function buildServiceLeadStatusUpdatedNotification(
+  payload: ServiceLeadStatusUpdatedEvent,
+): NotificationContent {
+  return {
+    title: 'تحديث طلب النقل',
+    body: `طلب النقل إلى ${payload.destination} — الحالة: ${payload.status}`,
+  };
+}
+
+export function buildProviderPromotionActivatedNotification(
+  payload: ProviderPromotionActivatedEvent,
+): NotificationContent {
+  return {
+    title: 'تم تفعيل الإعلان المميز',
+    body: `إعلانك المميز (${payload.type}) أصبح نشطاً على المنصة`,
   };
 }

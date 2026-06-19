@@ -6,11 +6,14 @@ Built with **NestJS**, **PostgreSQL**, **Prisma**, **JWT**, **Phone OTP**, and *
 
 **دليل العميل (عربي — شرح الدورات بدون تفاصيل تقنية):** [`docs/CLIENT_GUIDE_AR.md`](docs/CLIENT_GUIDE_AR.md)
 
+**لوحة مقدم الخدمة (Frontend / Dashboard):** [`docs/SERVICE_PROVIDER_README.md`](docs/SERVICE_PROVIDER_README.md)
+
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Service Provider Module (Dashboard Guide)](#service-provider-module-dashboard-guide)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
 - [Business Rules](#business-rules)
@@ -53,6 +56,24 @@ This API provides:
 | `ADMIN` | Full system access |
 | `OWNER` | Manages own properties |
 | `CUSTOMER` | Views published properties, creates bookings |
+| `SERVICE_PROVIDER` | Manages services (food orders, transport leads) via Provider Portal |
+
+---
+
+## Service Provider Module (Dashboard Guide)
+
+Full frontend documentation for building the **Provider Portal** in the dashboard project:
+
+**[`docs/SERVICE_PROVIDER_README.md`](docs/SERVICE_PROVIDER_README.md)**
+
+Includes:
+
+- All API routes (`/provider/*`, `/services/*`, `/admin/providers/*`)
+- Enums, permissions, post-login redirect logic
+- Pages to build (`/provider/dashboard`, orders, leads, listings, coverage)
+- FCM notification types
+- React Query hooks structure
+- Ready-to-copy Cursor prompt
 
 ---
 

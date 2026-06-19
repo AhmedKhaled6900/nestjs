@@ -24,6 +24,7 @@ const engagement_module_1 = require("./engagement/engagement.module");
 const offer_module_1 = require("./offer/offer.module");
 const rental_module_1 = require("./rental/rental.module");
 const attribute_module_1 = require("./attribute/attribute.module");
+const service_provider_module_1 = require("./service-provider/service-provider.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -52,6 +53,7 @@ exports.AppModule = AppModule = __decorate([
             offer_module_1.OfferModule,
             rental_module_1.RentalModule,
             attribute_module_1.AttributeModule,
+            service_provider_module_1.ServiceProviderModule,
             health_module_1.HealthModule,
         ],
     })

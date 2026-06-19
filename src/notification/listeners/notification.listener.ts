@@ -17,6 +17,17 @@ import {
   PropertyRejectedEvent,
   UserEmailVerifiedEvent,
   UserRegisteredEvent,
+  ServiceProviderSubmittedEvent,
+  ServiceProviderApprovedEvent,
+  ServiceProviderRejectedEvent,
+  ServiceProviderSuspendedEvent,
+  ServiceOrderReceivedEvent,
+  ServiceOrderAcceptedEvent,
+  ServiceOrderRejectedEvent,
+  ServiceOrderStatusUpdatedEvent,
+  ServiceLeadReceivedEvent,
+  ServiceLeadStatusUpdatedEvent,
+  ProviderPromotionActivatedEvent,
 } from '../events/notification.events';
 import {
   buildOwnerKycApprovedNotification,
@@ -33,6 +44,17 @@ import {
   buildPropertyRejectedNotification,
   buildUserEmailVerifiedNotification,
   buildUserRegisteredNotification,
+  buildServiceProviderSubmittedNotification,
+  buildServiceProviderApprovedNotification,
+  buildServiceProviderRejectedNotification,
+  buildServiceProviderSuspendedNotification,
+  buildServiceOrderReceivedNotification,
+  buildServiceOrderAcceptedNotification,
+  buildServiceOrderRejectedNotification,
+  buildServiceOrderStatusUpdatedNotification,
+  buildServiceLeadReceivedNotification,
+  buildServiceLeadStatusUpdatedNotification,
+  buildProviderPromotionActivatedNotification,
 } from '../notification.templates';
 import { NotificationService } from '../notification.service';
 
@@ -332,5 +354,186 @@ export class NotificationListener {
         },
       }),
     ]);
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_PROVIDER_SUBMITTED, { async: true })
+  async handleServiceProviderSubmitted(payload: ServiceProviderSubmittedEvent) {
+    const content = buildServiceProviderSubmittedNotification(payload);
+
+    await this.notificationService.createForAllAdmins({
+      type: NotificationType.SERVICE_PROVIDER_SUBMITTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        providerUserId: payload.providerUserId,
+        profileId: payload.profileId,
+        businessName: payload.businessName,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_PROVIDER_APPROVED, { async: true })
+  async handleServiceProviderApproved(payload: ServiceProviderApprovedEvent) {
+    const content = buildServiceProviderApprovedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.providerUserId,
+      type: NotificationType.SERVICE_PROVIDER_APPROVED,
+      title: content.title,
+      body: content.body,
+      data: { providerUserId: payload.providerUserId },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_PROVIDER_REJECTED, { async: true })
+  async handleServiceProviderRejected(payload: ServiceProviderRejectedEvent) {
+    const content = buildServiceProviderRejectedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.providerUserId,
+      type: NotificationType.SERVICE_PROVIDER_REJECTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        providerUserId: payload.providerUserId,
+        reason: payload.reason,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_PROVIDER_SUSPENDED, { async: true })
+  async handleServiceProviderSuspended(payload: ServiceProviderSuspendedEvent) {
+    const content = buildServiceProviderSuspendedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.providerUserId,
+      type: NotificationType.SERVICE_PROVIDER_SUSPENDED,
+      title: content.title,
+      body: content.body,
+      data: {
+        providerUserId: payload.providerUserId,
+        reason: payload.reason,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_ORDER_RECEIVED, { async: true })
+  async handleServiceOrderReceived(payload: ServiceOrderReceivedEvent) {
+    const content = buildServiceOrderReceivedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.providerUserId,
+      type: NotificationType.SERVICE_ORDER_RECEIVED,
+      title: content.title,
+      body: content.body,
+      data: {
+        orderId: payload.orderId,
+        customerId: payload.customerId,
+        providerId: payload.providerId,
+        listingTitle: payload.listingTitle,
+        subtotal: payload.subtotal,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_ORDER_ACCEPTED, { async: true })
+  async handleServiceOrderAccepted(payload: ServiceOrderAcceptedEvent) {
+    const content = buildServiceOrderAcceptedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.customerId,
+      type: NotificationType.SERVICE_ORDER_ACCEPTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        orderId: payload.orderId,
+        listingTitle: payload.listingTitle,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_ORDER_REJECTED, { async: true })
+  async handleServiceOrderRejected(payload: ServiceOrderRejectedEvent) {
+    const content = buildServiceOrderRejectedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.customerId,
+      type: NotificationType.SERVICE_ORDER_REJECTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        orderId: payload.orderId,
+        listingTitle: payload.listingTitle,
+        reason: payload.reason,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_ORDER_STATUS_UPDATED, { async: true })
+  async handleServiceOrderStatusUpdated(payload: ServiceOrderStatusUpdatedEvent) {
+    const content = buildServiceOrderStatusUpdatedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.customerId,
+      type: NotificationType.SERVICE_ORDER_STATUS_UPDATED,
+      title: content.title,
+      body: content.body,
+      data: {
+        orderId: payload.orderId,
+        listingTitle: payload.listingTitle,
+        status: payload.status,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_LEAD_RECEIVED, { async: true })
+  async handleServiceLeadReceived(payload: ServiceLeadReceivedEvent) {
+    const content = buildServiceLeadReceivedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.providerUserId,
+      type: NotificationType.SERVICE_LEAD_RECEIVED,
+      title: content.title,
+      body: content.body,
+      data: {
+        leadId: payload.leadId,
+        customerId: payload.customerId,
+        providerId: payload.providerId,
+        destination: payload.destination,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_LEAD_STATUS_UPDATED, { async: true })
+  async handleServiceLeadStatusUpdated(payload: ServiceLeadStatusUpdatedEvent) {
+    const content = buildServiceLeadStatusUpdatedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.customerId,
+      type: NotificationType.SERVICE_LEAD_STATUS_UPDATED,
+      title: content.title,
+      body: content.body,
+      data: {
+        leadId: payload.leadId,
+        destination: payload.destination,
+        status: payload.status,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.PROVIDER_PROMOTION_ACTIVATED, { async: true })
+  async handleProviderPromotionActivated(payload: ProviderPromotionActivatedEvent) {
+    const content = buildProviderPromotionActivatedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.providerUserId,
+      type: NotificationType.PROVIDER_PROMOTION_ACTIVATED,
+      title: content.title,
+      body: content.body,
+      data: {
+        promotionId: payload.promotionId,
+        type: payload.type,
+      },
+    });
   }
 }

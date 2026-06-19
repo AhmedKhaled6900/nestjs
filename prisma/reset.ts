@@ -4,6 +4,14 @@ import { seedDatabase } from './seed';
 const prisma = new PrismaClient();
 
 export async function wipeDatabase() {
+  await prisma.serviceOrderItem.deleteMany();
+  await prisma.serviceOrder.deleteMany();
+  await prisma.serviceLead.deleteMany();
+  await prisma.providerPromotion.deleteMany();
+  await prisma.serviceListing.deleteMany();
+  await prisma.serviceCoverageArea.deleteMany();
+  await prisma.serviceProviderProfile.deleteMany();
+  await prisma.serviceCategory.deleteMany();
   await prisma.propertyAttributeValue.deleteMany();
   await prisma.subcategoryAttribute.deleteMany();
   await prisma.attribute.deleteMany();
@@ -24,7 +32,9 @@ export async function wipeDatabase() {
   await prisma.category.deleteMany({ where: { parentId: { not: null } } });
   await prisma.category.deleteMany({ where: { parentId: null } });
 
-  console.log('Database wiped: users, properties, engagement, offers, rentals, attributes, categories.');
+  console.log(
+    'Database wiped: users, properties, services, engagement, offers, rentals, attributes, categories.',
+  );
 }
 
 async function main() {
@@ -36,6 +46,7 @@ async function main() {
 
   console.log('Resetting database...');
   await wipeDatabase();
+  process.env.SEED_DEMO = process.env.SEED_DEMO ?? 'true';
   await seedDatabase();
   console.log('Reset completed.');
 }

@@ -15,6 +15,7 @@ import { EngagementModule } from './engagement/engagement.module';
 import { OfferModule } from './offer/offer.module';
 import { RentalModule } from './rental/rental.module';
 import { AttributeModule } from './attribute/attribute.module';
+import { ServiceProviderModule } from './service-provider/service-provider.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AttributeModule } from './attribute/attribute.module';
     OfferModule,
     RentalModule,
     AttributeModule,
+    ServiceProviderModule,
     HealthModule,
   ],
 })

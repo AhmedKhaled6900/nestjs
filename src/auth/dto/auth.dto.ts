@@ -31,9 +31,9 @@ export class RegisterDto {
   password!: string;
 
   @ApiProperty({
-    enum: [RoleName.CUSTOMER, RoleName.OWNER],
+    enum: [RoleName.CUSTOMER, RoleName.OWNER, RoleName.SERVICE_PROVIDER],
     example: 'CUSTOMER',
-    description: 'CUSTOMER or OWNER only',
+    description: 'CUSTOMER, OWNER, or SERVICE_PROVIDER',
   })
   @IsEnum(RoleName)
   role!: RoleName;

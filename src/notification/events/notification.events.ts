@@ -15,6 +15,17 @@ export const NOTIFICATION_EVENTS = {
   PRICE_OFFER_EXPIRED: 'notification.price_offer.expired',
   PRICE_OFFER_NEGOTIATING_FAILED: 'notification.price_offer.negotiating_failed',
   PROPERTY_RENTED: 'notification.property.rented',
+  SERVICE_PROVIDER_SUBMITTED: 'notification.service_provider.submitted',
+  SERVICE_PROVIDER_APPROVED: 'notification.service_provider.approved',
+  SERVICE_PROVIDER_REJECTED: 'notification.service_provider.rejected',
+  SERVICE_PROVIDER_SUSPENDED: 'notification.service_provider.suspended',
+  SERVICE_ORDER_RECEIVED: 'notification.service_order.received',
+  SERVICE_ORDER_ACCEPTED: 'notification.service_order.accepted',
+  SERVICE_ORDER_REJECTED: 'notification.service_order.rejected',
+  SERVICE_ORDER_STATUS_UPDATED: 'notification.service_order.status_updated',
+  SERVICE_LEAD_RECEIVED: 'notification.service_lead.received',
+  SERVICE_LEAD_STATUS_UPDATED: 'notification.service_lead.status_updated',
+  PROVIDER_PROMOTION_ACTIVATED: 'notification.provider_promotion.activated',
 } as const;
 
 export type UserRegisteredEvent = {
@@ -131,4 +142,82 @@ export type PropertyRentedEvent = {
   duration: number;
   endsAt: string;
   source: string;
+};
+
+export type ServiceProviderSubmittedEvent = {
+  providerUserId: string;
+  providerName: string;
+  providerEmail: string | null;
+  profileId: string;
+  businessName: string;
+};
+
+export type ServiceProviderApprovedEvent = {
+  providerUserId: string;
+  providerName: string;
+  businessName: string;
+};
+
+export type ServiceProviderRejectedEvent = {
+  providerUserId: string;
+  providerName: string;
+  reason: string;
+};
+
+export type ServiceProviderSuspendedEvent = {
+  providerUserId: string;
+  providerName: string;
+  reason: string;
+};
+
+export type ServiceOrderReceivedEvent = {
+  providerUserId: string;
+  providerId: string;
+  customerId: string;
+  customerName: string;
+  orderId: string;
+  listingTitle: string;
+  subtotal: number;
+};
+
+export type ServiceOrderAcceptedEvent = {
+  customerId: string;
+  orderId: string;
+  listingTitle: string;
+};
+
+export type ServiceOrderRejectedEvent = {
+  customerId: string;
+  orderId: string;
+  listingTitle: string;
+  reason: string | null;
+};
+
+export type ServiceOrderStatusUpdatedEvent = {
+  customerId: string;
+  orderId: string;
+  listingTitle: string;
+  status: string;
+};
+
+export type ServiceLeadReceivedEvent = {
+  providerUserId: string;
+  providerId: string;
+  customerId: string;
+  customerName: string;
+  leadId: string;
+  destination: string;
+};
+
+export type ServiceLeadStatusUpdatedEvent = {
+  customerId: string;
+  leadId: string;
+  destination: string;
+  status: string;
+};
+
+export type ProviderPromotionActivatedEvent = {
+  providerUserId: string;
+  promotionId: string;
+  type: string;
 };

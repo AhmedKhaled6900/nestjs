@@ -97,6 +97,14 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   FIREBASE_PRIVATE_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  PAYMOB_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  PAYMOB_INTEGRATION_ID?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

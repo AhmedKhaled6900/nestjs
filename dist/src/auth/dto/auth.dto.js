@@ -41,9 +41,9 @@ __decorate([
 ], RegisterDto.prototype, "password", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        enum: [client_1.RoleName.CUSTOMER, client_1.RoleName.OWNER],
+        enum: [client_1.RoleName.CUSTOMER, client_1.RoleName.OWNER, client_1.RoleName.SERVICE_PROVIDER],
         example: 'CUSTOMER',
-        description: 'CUSTOMER or OWNER only',
+        description: 'CUSTOMER, OWNER, or SERVICE_PROVIDER',
     }),
     (0, class_validator_1.IsEnum)(client_1.RoleName),
     __metadata("design:type", String)
