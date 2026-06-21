@@ -133,6 +133,10 @@ const showMenu =
 | الصنف | `name` |
 | السعر | `price` + «ج.م» |
 | وقت التجهيز | `prepTimeMinutes` + «دقيقة» |
+
+**سعر التوصيل (ثابت):**
+- من البروفايل: `menuDeliveryFee` على صفحة المقدم
+- من الإعلان: `listings[].deliveryFee`
 | الكمية | input محلي في السلة |
 | إضافة | زر يضيف للسلة بـ `menuItemId` |
 
@@ -172,10 +176,11 @@ Authorization: Bearer <accessToken>
   "deliveryCity": "الإسكندرية",
   "deliveryArea": "سيدي بشر",
   "deliveryAddress": "شارع 10",
-  "deliveryFee": 20,
   "notes": "اتصل قبل الوصول"
 }
 ```
+
+- `deliveryFee` **لا يُرسل من العميل** — يُحسب من `listing.deliveryFee` (إن وُجد `listingId`) أو `menuDeliveryFee` على البروفايل.
 
 - `providerId` من صفحة المقدم (`GET /services/providers/:id`).
 - `items[].menuItemId` من `menuItems[].id` — **لا ترسل السعر يدوياً**.

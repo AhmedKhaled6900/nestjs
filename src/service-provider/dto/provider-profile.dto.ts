@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class CreateProviderProfileDto {
   @ApiProperty({ example: 'مطعم البحر' })
@@ -25,6 +25,15 @@ export class CreateProviderProfileDto {
   @IsOptional()
   @IsString()
   whatsapp?: string;
+
+  @ApiPropertyOptional({
+    example: 15,
+    description: 'Fixed delivery fee for the entire profile menu',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  menuDeliveryFee?: number;
 }
 
 export class UpdateProviderProfileDto {
@@ -53,6 +62,12 @@ export class UpdateProviderProfileDto {
   @IsOptional()
   @IsString()
   whatsapp?: string;
+
+  @ApiPropertyOptional({ example: 15, description: 'Fixed delivery fee for profile menu' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  menuDeliveryFee?: number;
 }
 
 export class SubmitProviderProfileDto {

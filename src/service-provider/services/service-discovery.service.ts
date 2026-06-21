@@ -146,6 +146,7 @@ export class ServiceDiscoveryService {
       logo: provider.logo,
       phone: provider.phone,
       whatsapp: provider.whatsapp,
+      menuDeliveryFee: decimalToNumber(provider.menuDeliveryFee),
       category: provider.category,
       coverageAreas: provider.coverageAreas,
       menuItems: provider.menuItems.map((item) => ({
@@ -159,6 +160,7 @@ export class ServiceDiscoveryService {
         id: listing.id,
         title: listing.title,
         description: listing.description,
+        deliveryFee: decimalToNumber(listing.deliveryFee),
         metadata: listing.metadata,
       })),
     };

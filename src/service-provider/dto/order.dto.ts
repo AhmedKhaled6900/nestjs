@@ -6,7 +6,6 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -63,12 +62,6 @@ export class CreateServiceOrderDto {
   @IsString()
   @IsNotEmpty()
   deliveryAddress!: string;
-
-  @ApiPropertyOptional({ example: 15 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  deliveryFee?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

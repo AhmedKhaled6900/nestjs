@@ -6,7 +6,8 @@ const bcrypt = require("bcrypt");
 const category_seed_data_1 = require("./category.seed-data");
 const service_category_seed_data_1 = require("./service-category.seed-data");
 const demo_seed_1 = require("./demo.seed");
-const prisma = new client_1.PrismaClient();
+const prisma_script_client_1 = require("./prisma-script-client");
+const prisma = (0, prisma_script_client_1.createScriptPrismaClient)();
 const PERMISSIONS = [
     { action: 'users.create', description: 'Create users' },
     { action: 'users.read', description: 'Read users' },

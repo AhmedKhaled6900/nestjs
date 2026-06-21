@@ -80,3 +80,15 @@ export function parseDateRange(from?: string, to?: string) {
 
   return { fromDate, toDate };
 }
+
+/** Listing ad fee takes precedence; otherwise profile menu delivery fee. */
+export function resolveOrderDeliveryFee(options: {
+  listingDeliveryFee: number | null;
+  profileMenuDeliveryFee: number;
+}) {
+  if (options.listingDeliveryFee !== null) {
+    return options.listingDeliveryFee;
+  }
+
+  return options.profileMenuDeliveryFee;
+}

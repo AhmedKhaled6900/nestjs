@@ -1422,6 +1422,10 @@ openssl rand -base64 48
 
 - Verify `DATABASE_URL` is set and PostgreSQL service is running
 - On Railway: ensure PostgreSQL plugin is linked to API service
+- **Neon:** open [Neon Console](https://console.neon.tech) and wake the project if suspended (free tier sleeps)
+- **Neon + Prisma:** set `DIRECT_URL` to the **direct** connection string (host without `-pooler`) for `migrate` / `seed`
+- Remove `channel_binding=require` from connection strings if Prisma fails on Windows
+- Retry once after waking Neon — first connection can take 5–10 seconds
 
 ### `P1001` / connection closed (Prisma dev)
 

@@ -224,15 +224,22 @@ service.category.manage
 
 منيو البروفايل العام (الأصناف النشطة فقط) — نفس بيانات `menuItems` في التفاصيل.
 
-**مثال `menuItems`:**
+**مثال تفاصيل المقدم (public):**
 
 ```json
 {
+  "menuDeliveryFee": 15,
   "menuItems": [
     { "id": "uuid", "name": "كشري", "price": 25, "prepTimeMinutes": 20 }
+  ],
+  "listings": [
+    { "id": "uuid", "title": "عرض الصيف", "deliveryFee": 10 }
   ]
 }
 ```
+
+- `menuDeliveryFee` = **سعر توصيل ثابت لكل المنيو** (مش لكل صنف).
+- `listings[].deliveryFee` = **سعر توصيل ثابت للإعلان** (مش لكل صنف).
 
 ---
 
@@ -256,6 +263,7 @@ Permission: `provider.profile.read`
   "whatsapp": "+201...",
   "nationalId": "https://...",
   "commercialRegister": null,
+  "menuDeliveryFee": 15,
   "status": "APPROVED",
   "rejectionReason": null,
   "suspensionReason": null,
@@ -289,9 +297,12 @@ Permission: `provider.profile.update`
   "categoryId": "...",
   "description": "...",
   "phone": "...",
-  "whatsapp": "..."
+  "whatsapp": "...",
+  "menuDeliveryFee": 15
 }
 ```
+
+> `menuDeliveryFee` = سعر توصيل **ثابت لكل منيو البروفايل** (مرة واحدة، مش على كل صنف).
 
 #### POST `/provider/profile/submit`
 
@@ -340,6 +351,7 @@ Permission: `provider.profile.update`
 {
   "title": "عرض الصيف — توصيل مجاني",
   "description": "...",
+  "deliveryFee": 10,
   "metadata": { "validUntil": "2026-08-31" }
 }
 ```
@@ -379,6 +391,8 @@ Permission: `provider.menu.manage` — كل أصناف المنيو (نشطة و
   "sortOrder": 0
 }
 ```
+
+> **سعر التوصيل للمنيو** يُضبط على مستوى البروفايل عبر `PATCH /provider/profile` → `menuDeliveryFee` (ثابت لكل المنيو).
 
 #### PATCH `/provider/menu-items/:id`
 
@@ -509,7 +523,6 @@ Permission: `service.order.create`
   "deliveryCity": "الإسكندرية",
   "deliveryArea": "سيدي بشر",
   "deliveryAddress": "شارع 12",
-  "deliveryFee": 15,
   "notes": "..."
 }
 ```
@@ -517,6 +530,7 @@ Permission: `service.order.create`
 - `providerId` **مطلوب** — معرّف بروفايل المقدم.
 - `items[].menuItemId` **مطلوب** — من منيو البروفايل (`GET /services/providers/:id`).
 - السعر والوقت يُؤخذان تلقائياً من المنيو (لا ترسل `unitPrice` يدوياً).
+- **`deliveryFee` يُحسب تلقائياً** — من `listing.deliveryFee` إن وُجد `listingId`، وإلا من `menuDeliveryFee` على البروفايل.
 - `listingId` **اختياري** — لربط الطلب بإعلان معيّن إن جاء العميل من إعلان.
 
 → FCM لمقدم الخدمة (`SERVICE_ORDER_RECEIVED`).

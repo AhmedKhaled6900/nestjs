@@ -21,7 +21,7 @@ import {
   SubmitProviderProfileDto,
   UpdateProviderProfileDto,
 } from '../dto/provider-profile.dto';
-import { getProviderProfileOrFail } from '../helpers/provider.helpers';
+import { getProviderProfileOrFail, decimalToNumber } from '../helpers/provider.helpers';
 
 @Injectable()
 export class ProviderProfileService {
@@ -61,6 +61,7 @@ export class ProviderProfileService {
         description: dto.description,
         phone: dto.phone,
         whatsapp: dto.whatsapp,
+        menuDeliveryFee: dto.menuDeliveryFee ?? 0,
         status: ServiceProviderStatus.DRAFT,
       },
     });
@@ -90,6 +91,7 @@ export class ProviderProfileService {
         description: dto.description,
         phone: dto.phone,
         whatsapp: dto.whatsapp,
+        menuDeliveryFee: dto.menuDeliveryFee,
       },
     });
 
@@ -356,6 +358,7 @@ export class ProviderProfileService {
     whatsapp: string | null;
     nationalId: string | null;
     commercialRegister: string | null;
+    menuDeliveryFee: { toNumber?: () => number } | number;
     status: ServiceProviderStatus;
     rejectionReason: string | null;
     suspensionReason: string | null;
@@ -374,6 +377,7 @@ export class ProviderProfileService {
       whatsapp: profile.whatsapp,
       nationalId: this.toPublicUrl(profile.nationalId),
       commercialRegister: this.toPublicUrl(profile.commercialRegister),
+      menuDeliveryFee: decimalToNumber(profile.menuDeliveryFee),
       status: profile.status,
       rejectionReason: profile.rejectionReason,
       suspensionReason: profile.suspensionReason,

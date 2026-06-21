@@ -40,6 +40,19 @@ export async function seedDemoSite(prisma: PrismaClient) {
     return;
   }
 
+  const existingDemoUser = await prisma.user.findFirst({
+    where: { email: { in: DEMO_OWNERS.map((owner) => owner.email) } },
+    select: { id: true, email: true },
+  });
+
+  if (existingDemoUser) {
+    console.log(
+      `Demo site data already exists (${existingDemoUser.email}). Skipping demo seed.`,
+    );
+    console.log('To wipe and reseed demo data: RESET_DB=true npx ts-node prisma/reset.ts');
+    return;
+  }
+
   const hashedPassword = await bcrypt.hash(DEMO_PASSWORD, 12);
 
   const [ownerRole, customerRole, providerRole] = await Promise.all([
@@ -357,6 +370,7 @@ export async function seedDemoSite(prisma: PrismaClient) {
             logo: PLACEHOLDER_IMAGE(`provider-${sp.key}`),
             nationalId: PLACEHOLDER_IMAGE(`provider-kyc-${sp.key}`),
             status: sp.status as ServiceProviderStatus,
+            menuDeliveryFee: 'menuDeliveryFee' in sp ? sp.menuDeliveryFee : 0,
           },
         },
       },
@@ -397,6 +411,7 @@ export async function seedDemoSite(prisma: PrismaClient) {
         categoryId,
         title: sp.listing.title,
         description: sp.description,
+        deliveryFee: 'deliveryFee' in sp.listing ? sp.listing.deliveryFee : 0,
         metadata: 'metadata' in sp.listing ? sp.listing.metadata : undefined,
         status: sp.listing.status as ServiceListingStatus,
       },

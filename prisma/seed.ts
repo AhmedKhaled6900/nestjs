@@ -1,11 +1,12 @@
-import { PrismaClient, RoleName, AuthProvider } from '@prisma/client';
+import { RoleName, AuthProvider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { CATEGORY_SEED } from './category.seed-data';
 import { SERVICE_CATEGORY_SEED } from './service-category.seed-data';
 
 import { seedDemoSite } from './demo.seed';
+import { createScriptPrismaClient } from './prisma-script-client';
 
-const prisma = new PrismaClient();
+const prisma = createScriptPrismaClient();
 
 const PERMISSIONS = [
   { action: 'users.create', description: 'Create users' },

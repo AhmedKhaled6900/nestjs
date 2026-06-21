@@ -23,6 +23,7 @@ import {
   decimalToNumber,
   getProviderProfileOrFail,
   parseDateRange,
+  resolveOrderDeliveryFee,
 } from '../helpers/provider.helpers';
 import { ProviderMenuService } from './provider-menu.service';
 
@@ -57,7 +58,7 @@ export class ServiceOrderService {
       throw new NotFoundException('Approved provider not found');
     }
 
-    let listing: { id: string; title: string } | null = null;
+    let listing: { id: string; title: string; deliveryFee: Prisma.Decimal } | null = null;
     if (dto.listingId) {
       const foundListing = await this.prisma.serviceListing.findFirst({
         where: {
@@ -65,7 +66,7 @@ export class ServiceOrderService {
           providerId: provider.id,
           status: 'ACTIVE',
         },
-        select: { id: true, title: true },
+        select: { id: true, title: true, deliveryFee: true },
       });
 
       if (!foundListing) {
@@ -86,7 +87,10 @@ export class ServiceOrderService {
       (sum, item) => sum + decimalToNumber(item.unitPrice) * item.quantity,
       0,
     );
-    const deliveryFee = dto.deliveryFee ?? 0;
+    const deliveryFee = resolveOrderDeliveryFee({
+      listingDeliveryFee: listing ? decimalToNumber(listing.deliveryFee) : null,
+      profileMenuDeliveryFee: decimalToNumber(provider.menuDeliveryFee),
+    });
     const commissionRate = decimalToNumber(provider.category.commissionRate);
     const { platformFee, providerNet } = computeOrderFees(
       subtotal,

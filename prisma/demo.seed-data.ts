@@ -86,6 +86,7 @@ export const DEMO_SERVICE_PROVIDERS = [
     categorySlug: 'restaurants',
     description: 'مأكولات بحرية وتوصيل سريع في سيدي بشر',
     status: 'APPROVED' as const,
+    menuDeliveryFee: 15,
     coverage: [{ city: DEMO_CITY, area: DEMO_AREAS.sidiBeshr }],
     menu: [
       { name: 'سمك مشوي', price: 120, prepTimeMinutes: 25, sortOrder: 0 },
@@ -95,6 +96,7 @@ export const DEMO_SERVICE_PROVIDERS = [
     listing: {
       title: 'عرض الصيف — توصيل مجاني فوق 200 جنيه',
       status: 'ACTIVE' as const,
+      deliveryFee: 10,
     },
   },
   {
@@ -106,6 +108,7 @@ export const DEMO_SERVICE_PROVIDERS = [
     categorySlug: 'cafes',
     description: 'قهوة ومشروبات ووجبات خفيفة',
     status: 'APPROVED' as const,
+    menuDeliveryFee: 12,
     coverage: [{ city: DEMO_CITY, area: DEMO_AREAS.agami }],
     menu: [
       { name: 'لاتيه', price: 35, prepTimeMinutes: 8, sortOrder: 0 },
@@ -114,6 +117,7 @@ export const DEMO_SERVICE_PROVIDERS = [
     listing: {
       title: 'خصم 10% على المشروبات الساخنة',
       status: 'ACTIVE' as const,
+      deliveryFee: 8,
     },
   },
   {
@@ -145,6 +149,7 @@ export const DEMO_SERVICE_PROVIDERS = [
     categorySlug: 'home-cooking',
     description: 'وجبات منزلية — بانتظار الموافقة',
     status: 'PENDING' as const,
+    menuDeliveryFee: 15,
     coverage: [{ city: DEMO_CITY, area: DEMO_AREAS.sidiBeshr }],
     menu: [{ name: 'محشي', price: 40, prepTimeMinutes: 45, sortOrder: 0 }],
     listing: {

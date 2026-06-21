@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import { seedDatabase } from './seed';
+import { createScriptPrismaClient } from './prisma-script-client';
 
-const prisma = new PrismaClient();
+const prisma = createScriptPrismaClient();
 
 export async function wipeDatabase() {
   await prisma.serviceOrderItem.deleteMany();

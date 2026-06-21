@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum AuthProvider {
@@ -614,6 +615,7 @@ model ServiceProviderProfile {
   nationalId      String?
   commercialRegister String?
   status          ServiceProviderStatus @default(DRAFT)
+  menuDeliveryFee Decimal               @default(0) @db.Decimal(14, 2)
   rejectionReason String?
   suspensionReason String?
   suspendedAt     DateTime?
@@ -675,6 +677,7 @@ model ServiceListing {
   categoryId  String
   title       String
   description String?              @db.Text
+  deliveryFee Decimal              @default(0) @db.Decimal(14, 2)
   menuItems Json?
   metadata    Json?
   status      ServiceListingStatus @default(DRAFT)

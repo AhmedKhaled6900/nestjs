@@ -9,6 +9,7 @@ import { CreateListingDto, UpdateListingDto } from '../dto/listing.dto';
 import {
   assertProviderApproved,
   assertProviderCanManage,
+  decimalToNumber,
   getProviderProfileOrFail,
 } from '../helpers/provider.helpers';
 
@@ -37,6 +38,7 @@ export class ProviderListingService {
         categoryId: profile.categoryId,
         title: dto.title,
         description: dto.description,
+        deliveryFee: dto.deliveryFee ?? 0,
         metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
         status: ServiceListingStatus.DRAFT,
       },
@@ -63,6 +65,7 @@ export class ProviderListingService {
       data: {
         title: dto.title,
         description: dto.description,
+        deliveryFee: dto.deliveryFee,
         metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
         status: dto.status,
       },
@@ -114,6 +117,7 @@ export class ProviderListingService {
     categoryId: string;
     title: string;
     description: string | null;
+    deliveryFee: { toNumber?: () => number } | number;
     metadata: unknown;
     status: ServiceListingStatus;
     createdAt: Date;
@@ -125,6 +129,7 @@ export class ProviderListingService {
       categoryId: listing.categoryId,
       title: listing.title,
       description: listing.description,
+      deliveryFee: decimalToNumber(listing.deliveryFee),
       metadata: listing.metadata,
       status: listing.status,
       createdAt: listing.createdAt,
