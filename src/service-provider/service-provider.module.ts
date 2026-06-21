@@ -21,6 +21,7 @@ import {
 } from './controllers/service-order.controller';
 import { ServicesPublicController } from './controllers/services-public.controller';
 import { PaymobService } from './payment/paymob.service';
+import { AdminProviderService } from './services/admin-provider.service';
 import { AdminServiceCategoryService } from './services/admin-service-category.service';
 import { ProviderCoverageService } from './services/provider-coverage.service';
 import { ProviderDashboardService } from './services/provider-dashboard.service';
@@ -58,6 +59,7 @@ import { ServiceOrderService } from './services/service-order.service';
     ProviderDashboardService,
     ServiceDiscoveryService,
     AdminServiceCategoryService,
+    AdminProviderService,
     ProviderPromotionService,
     PaymobService,
   ],

@@ -31,6 +31,8 @@ import {
   SuspendProviderDto,
   UpdateProviderProfileDto,
 } from '../dto/provider-profile.dto';
+import { QueryAdminProvidersDto } from '../dto/admin-provider.dto';
+import { AdminProviderService } from '../services/admin-provider.service';
 import { ProviderProfileService } from '../services/provider-profile.service';
 
 const providerKycUpload = FileFieldsInterceptor(
@@ -96,13 +98,38 @@ export class ProviderProfileController {
 @ApiBearerAuth('access-token')
 @Controller('admin/providers')
 export class AdminProviderController {
-  constructor(private readonly providerProfileService: ProviderProfileService) {}
+  constructor(
+    private readonly providerProfileService: ProviderProfileService,
+    private readonly adminProviderService: AdminProviderService,
+  ) {}
+
+  @Get()
+  @RequirePermissions('provider.review')
+  @ApiOperation({
+    summary: 'List all service providers (full details)',
+    description:
+      'Returns paginated providers with status, user, category, coverage areas, listings, orders (with items), leads, promotions, and stats.',
+  })
+  listAll(@Query() query: QueryAdminProvidersDto) {
+    return this.adminProviderService.listAll(query);
+  }
 
   @Get('pending')
   @RequirePermissions('provider.review')
   @ApiOperation({ summary: 'List pending service provider profiles' })
   listPending(@Query() query: PaginationQueryDto) {
     return this.providerProfileService.listPendingProfiles(query);
+  }
+
+  @Get(':providerId')
+  @RequirePermissions('provider.review')
+  @ApiOperation({
+    summary: 'Get one service provider (full admin details)',
+    description:
+      'Use service provider profile id (not userId). Includes all listings, orders, leads, coverage, KYC docs, and stats.',
+  })
+  getById(@Param('providerId') providerId: string) {
+    return this.adminProviderService.getById(providerId);
   }
 
   @Patch(':userId/approve')
