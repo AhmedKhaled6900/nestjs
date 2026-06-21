@@ -33,6 +33,9 @@ const adminProviderInclude = {
   coverageAreas: {
     orderBy: [{ city: 'asc' as const }, { area: 'asc' as const }],
   },
+  menuItems: {
+    orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }],
+  },
   listings: {
     orderBy: { updatedAt: 'desc' as const },
   },
@@ -138,13 +141,22 @@ export class AdminProviderService {
         commissionRate: decimalToNumber(profile.category.commissionRate),
       },
       coverageAreas: profile.coverageAreas,
+      menuItems: profile.menuItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: decimalToNumber(item.price),
+        prepTimeMinutes: item.prepTimeMinutes,
+        isActive: item.isActive,
+        sortOrder: item.sortOrder,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      })),
       listings: profile.listings.map((listing) => ({
         id: listing.id,
         providerId: listing.providerId,
         categoryId: listing.categoryId,
         title: listing.title,
         description: listing.description,
-        menuItems: listing.menuItems,
         metadata: listing.metadata,
         status: listing.status,
         createdAt: listing.createdAt,
@@ -217,9 +229,11 @@ export class AdminProviderService {
       notes: order.notes,
       items: order.items.map((item) => ({
         id: item.id,
+        menuItemId: item.menuItemId,
         name: item.name,
         quantity: item.quantity,
         unitPrice: decimalToNumber(item.unitPrice),
+        prepTimeMinutes: item.prepTimeMinutes,
         notes: item.notes,
       })),
       listing: order.listing,

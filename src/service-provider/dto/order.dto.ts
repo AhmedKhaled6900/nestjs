@@ -15,21 +15,15 @@ import {
 } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
-export class OrderItemDto {
-  @ApiProperty({ example: 'كشري' })
-  @IsString()
-  @IsNotEmpty()
-  name!: string;
+export class OrderMenuItemDto {
+  @ApiProperty({ description: 'Profile menu item id' })
+  @IsUUID()
+  menuItemId!: string;
 
   @ApiProperty({ example: 2 })
   @IsInt()
   @Min(1)
   quantity!: number;
-
-  @ApiProperty({ example: 25 })
-  @IsNumber()
-  @Min(0)
-  unitPrice!: number;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -38,15 +32,22 @@ export class OrderItemDto {
 }
 
 export class CreateServiceOrderDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Service provider profile id' })
   @IsUUID()
-  listingId!: string;
+  providerId!: string;
 
-  @ApiProperty({ type: [OrderItemDto] })
+  @ApiPropertyOptional({
+    description: 'Optional listing/ad attribution if customer came from a specific ad',
+  })
+  @IsOptional()
+  @IsUUID()
+  listingId?: string;
+
+  @ApiProperty({ type: [OrderMenuItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => OrderItemDto)
-  items!: OrderItemDto[];
+  @Type(() => OrderMenuItemDto)
+  items!: OrderMenuItemDto[];
 
   @ApiProperty({ example: 'الإسكندرية' })
   @IsString()
@@ -58,7 +59,7 @@ export class CreateServiceOrderDto {
   @IsString()
   deliveryArea?: string;
 
-  @ApiProperty({ example: 'شارع الكورniche 12' })
+  @ApiProperty({ example: 'شارع الكورنيش 12' })
   @IsString()
   @IsNotEmpty()
   deliveryAddress!: string;

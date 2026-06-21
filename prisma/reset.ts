@@ -9,6 +9,7 @@ export async function wipeDatabase() {
   await prisma.serviceLead.deleteMany();
   await prisma.providerPromotion.deleteMany();
   await prisma.serviceListing.deleteMany();
+  await prisma.serviceProviderMenuItem.deleteMany();
   await prisma.serviceCoverageArea.deleteMany();
   await prisma.serviceProviderProfile.deleteMany();
   await prisma.serviceCategory.deleteMany();

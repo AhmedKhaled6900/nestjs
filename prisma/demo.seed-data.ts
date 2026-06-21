@@ -87,14 +87,14 @@ export const DEMO_SERVICE_PROVIDERS = [
     description: 'مأكولات بحرية وتوصيل سريع في سيدي بشر',
     status: 'APPROVED' as const,
     coverage: [{ city: DEMO_CITY, area: DEMO_AREAS.sidiBeshr }],
+    menu: [
+      { name: 'سمك مشوي', price: 120, prepTimeMinutes: 25, sortOrder: 0 },
+      { name: 'سبيط مشوي', price: 85, prepTimeMinutes: 20, sortOrder: 1 },
+      { name: 'أرز بحرية', price: 45, prepTimeMinutes: 15, sortOrder: 2 },
+    ],
     listing: {
-      title: 'منيو مطعم البحر',
+      title: 'عرض الصيف — توصيل مجاني فوق 200 جنيه',
       status: 'ACTIVE' as const,
-      menuItems: [
-        { name: 'سمك مشوي', price: 120 },
-        { name: 'سبيط مشوي', price: 85 },
-        { name: 'أرز بحرية', price: 45 },
-      ],
     },
   },
   {
@@ -107,13 +107,13 @@ export const DEMO_SERVICE_PROVIDERS = [
     description: 'قهوة ومشروبات ووجبات خفيفة',
     status: 'APPROVED' as const,
     coverage: [{ city: DEMO_CITY, area: DEMO_AREAS.agami }],
+    menu: [
+      { name: 'لاتيه', price: 35, prepTimeMinutes: 8, sortOrder: 0 },
+      { name: 'كروissant', price: 25, prepTimeMinutes: 5, sortOrder: 1 },
+    ],
     listing: {
-      title: 'منيو الكافيه',
+      title: 'خصم 10% على المشروبات الساخنة',
       status: 'ACTIVE' as const,
-      menuItems: [
-        { name: 'لاتيه', price: 35 },
-        { name: 'كروissant', price: 25 },
-      ],
     },
   },
   {
@@ -146,10 +146,10 @@ export const DEMO_SERVICE_PROVIDERS = [
     description: 'وجبات منزلية — بانتظار الموافقة',
     status: 'PENDING' as const,
     coverage: [{ city: DEMO_CITY, area: DEMO_AREAS.sidiBeshr }],
+    menu: [{ name: 'محشي', price: 40, prepTimeMinutes: 45, sortOrder: 0 }],
     listing: {
-      title: 'وجبات منزلية',
+      title: 'وجبات منزلية طازجة',
       status: 'DRAFT' as const,
-      menuItems: [{ name: 'محشي', price: 40 }],
     },
   },
 ] as const;

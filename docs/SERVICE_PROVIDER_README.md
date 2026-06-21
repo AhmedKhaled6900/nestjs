@@ -131,6 +131,7 @@ provider.profile.read
 provider.profile.update
 provider.coverage.manage
 provider.listing.manage
+provider.menu.manage
 provider.order.read
 provider.order.manage
 provider.lead.read
@@ -172,7 +173,8 @@ service.category.manage
 | `/provider/suspended` | — | حالة SUSPENDED |
 | `/provider/dashboard` | `provider.dashboard.read` | إحصائيات وأرباح |
 | `/provider/coverage` | `provider.coverage.manage` | مناطق التغطية |
-| `/provider/listings` | `provider.listing.manage` | إعلانات/منيو مجاني |
+| `/provider/listings` | `provider.listing.manage` | إعلانات مجانية (عروض/ترويج) |
+| `/provider/menu` | `provider.menu.manage` | منيو البروفايل الثابت (اسم + سعر + وقت التجهيز) |
 | `/provider/orders` | `provider.order.read` | قائمة أوردرات + قبول/رفض |
 | `/provider/leads` | `provider.lead.read` | leads النقل |
 | `/provider/promotions` | `provider.promotion.manage` | (مرحلة 2) إعلان مدفوع |
@@ -181,8 +183,12 @@ service.category.manage
 
 | Route | Permission | الوصف |
 |-------|------------|--------|
-| `/admin/providers/pending` | `provider.review` | موافقة مقدمين |
+| `/admin/providers` | `provider.review` | كل المقدمين — تفاصيل كاملة (paginated) |
+| `/admin/providers/:providerId` | `provider.review` | تفاصيل مقدم واحد (profile id) |
+| `/admin/providers/pending` | `provider.review` | المعلّقين فقط (موافقة) |
 | `/admin/service-categories` | `service.category.read` | فئات + commissionRate |
+
+> **مهم:** الموافقة/الرفض/التعليق تستخدم `userId` — عرض التفاصيل يستخدم `providerId` (profile id).
 
 ---
 
@@ -212,7 +218,21 @@ service.category.manage
 
 #### GET `/services/providers/:id`
 
-تفاصيل مقدم + listings نشطة + menuItems.
+تفاصيل مقدم + **منيو البروفايل** (`menuItems`) + إعلانات نشطة (`listings`).
+
+#### GET `/services/providers/:providerId/menu`
+
+منيو البروفايل العام (الأصناف النشطة فقط) — نفس بيانات `menuItems` في التفاصيل.
+
+**مثال `menuItems`:**
+
+```json
+{
+  "menuItems": [
+    { "id": "uuid", "name": "كشري", "price": 25, "prepTimeMinutes": 20 }
+  ]
+}
+```
 
 ---
 
@@ -310,7 +330,7 @@ Permission: `provider.profile.update`
 
 ---
 
-### Listings (إعلان مجاني)
+### Listings (إعلان مجاني — منفصل عن المنيو)
 
 #### GET `/provider/listings`
 
@@ -318,14 +338,13 @@ Permission: `provider.profile.update`
 
 ```json
 {
-  "title": "منيو المطعم",
+  "title": "عرض الصيف — توصيل مجاني",
   "description": "...",
-  "menuItems": [{ "name": "كشري", "price": 25 }],
-  "metadata": { "deliveryTime": "30-45 min" }
+  "metadata": { "validUntil": "2026-08-31" }
 }
 ```
 
-→ يُنشأ بحالة `DRAFT`.
+→ يُنشأ بحالة `DRAFT`. **المنيو الثابت** يُدار من `/provider/menu-items` وليس من الإعلان.
 
 #### PATCH `/provider/listings/:id`
 
@@ -333,7 +352,6 @@ Permission: `provider.profile.update`
 {
   "title": "...",
   "description": "...",
-  "menuItems": [...],
   "metadata": {...},
   "status": "ACTIVE"
 }
@@ -342,6 +360,39 @@ Permission: `provider.profile.update`
 > `status: ACTIVE` يتطلب provider `APPROVED`.
 
 #### DELETE `/provider/listings/:id`
+
+---
+
+### Profile Menu (منيو البروفايل الثابت)
+
+#### GET `/provider/menu-items`
+
+Permission: `provider.menu.manage` — كل أصناف المنيو (نشطة وغير نشطة).
+
+#### POST `/provider/menu-items`
+
+```json
+{
+  "name": "كشري",
+  "price": 25,
+  "prepTimeMinutes": 20,
+  "sortOrder": 0
+}
+```
+
+#### PATCH `/provider/menu-items/:id`
+
+```json
+{
+  "name": "كشري كبير",
+  "price": 30,
+  "prepTimeMinutes": 25,
+  "isActive": true,
+  "sortOrder": 1
+}
+```
+
+#### DELETE `/provider/menu-items/:id`
 
 ---
 
@@ -450,15 +501,23 @@ Permission: `service.order.create`
 
 ```json
 {
+  "providerId": "uuid",
   "listingId": "uuid",
-  "items": [{ "name": "كشري", "quantity": 2, "unitPrice": 25 }],
+  "items": [
+    { "menuItemId": "uuid", "quantity": 2, "notes": "بدون بصل" }
+  ],
   "deliveryCity": "الإسكندرية",
   "deliveryArea": "سيدي بشر",
   "deliveryAddress": "شارع 12",
   "deliveryFee": 15,
-  "notes": "بدون بصل"
+  "notes": "..."
 }
 ```
+
+- `providerId` **مطلوب** — معرّف بروفايل المقدم.
+- `items[].menuItemId` **مطلوب** — من منيو البروفايل (`GET /services/providers/:id`).
+- السعر والوقت يُؤخذان تلقائياً من المنيو (لا ترسل `unitPrice` يدوياً).
+- `listingId` **اختياري** — لربط الطلب بإعلان معيّن إن جاء العميل من إعلان.
 
 → FCM لمقدم الخدمة (`SERVICE_ORDER_RECEIVED`).
 
@@ -485,9 +544,97 @@ Permission: `service.order.create`
 
 ### Admin
 
+#### GET `/admin/providers?page=&limit=&status=`
+
+Permission: `provider.review`
+
+قائمة **كل** مقدمي الخدمات مع التفاصيل الكاملة لكل واحد (paginated).
+
+**Query params:**
+
+| Param | الوصف |
+|-------|--------|
+| `page`, `limit` | ترقيم |
+| `status` | اختياري: `DRAFT` \| `PENDING` \| `APPROVED` \| `SUSPENDED` |
+
+**كل عنصر في القائمة يتضمن:**
+
+- الملف: `status`, `businessName`, KYC (`nationalId`, `commercialRegister`, `logo`), أسباب الرفض/التعليق
+- `user`: name, email, phone, isVerified
+- `category` + `commissionRate`
+- `coverageAreas` (كل المناطق — نشطة وغير نشطة)
+- `menuItems` (منيو البروفايل: اسم، سعر، `prepTimeMinutes`, `isActive`)
+- `listings` (إعلانات + metadata + status)
+- `orders` كاملة مع `items[]` + `customer`
+- `leads` كاملة مع `customer`
+- `promotions`
+- `stats`: `ordersCount`, `leadsCount`, `ordersByStatus`, `leadsByStatus`, `revenue`
+
+**Response (مختصر):**
+
+```json
+{
+  "items": [
+    {
+      "id": "provider-profile-uuid",
+      "userId": "user-uuid",
+      "businessName": "مطعم البحر",
+      "status": "APPROVED",
+      "user": { "id": "...", "name": "...", "email": "...", "phone": "...", "isVerified": true },
+      "category": { "id": "...", "name": "مطاعم", "slug": "restaurants", "commissionRate": 0 },
+      "coverageAreas": [{ "city": "الإسكندرية", "area": "سيدي بشر", "isActive": true }],
+      "menuItems": [{ "id": "...", "name": "كشري", "price": 25, "prepTimeMinutes": 20, "isActive": true }],
+      "listings": [{ "id": "...", "title": "عرض الصيف", "status": "ACTIVE" }],
+      "orders": [
+        {
+          "id": "...",
+          "status": "PENDING",
+          "subtotal": 135,
+          "deliveryFee": 15,
+          "platformFee": 0,
+          "providerNet": 150,
+          "items": [{ "menuItemId": "...", "name": "كشري", "quantity": 2, "unitPrice": 25, "prepTimeMinutes": 20 }],
+          "customer": { "id": "...", "name": "...", "email": "...", "phone": "..." }
+        }
+      ],
+      "leads": [],
+      "promotions": [],
+      "stats": {
+        "listingsCount": 1,
+        "ordersCount": 2,
+        "leadsCount": 0,
+        "ordersByStatus": { "PENDING": 1, "DELIVERED": 1 },
+        "leadsByStatus": {},
+        "revenue": { "totalSales": 120, "platformFee": 0, "providerNet": 135 }
+      }
+    }
+  ],
+  "total": 4,
+  "page": 1,
+  "limit": 20
+}
+```
+
+---
+
+#### GET `/admin/providers/:providerId`
+
+Permission: `provider.review`
+
+تفاصيل **مقدم واحد** — نفس هيكل عنصر القائمة أعلاه.
+
+> استخدم **profile id** (`ServiceProviderProfile.id`) — نفس `id` في `GET /services/providers/:id`  
+> **ليس** `userId` (اللي بيستخدم في approve/reject/suspend)
+
+---
+
 #### GET `/admin/providers/pending?page=&limit=`
 
+قائمة المعلّقين فقط (`PENDING` + email غير مفعّل) — للشاشة السريعة للموافقة.
+
 #### PATCH `/admin/providers/:userId/approve`
+
+> `:userId` = معرّف المستخدم (User.id) — مش profile id
 
 #### PATCH `/admin/providers/:userId/reject`
 
@@ -606,6 +753,7 @@ src/features/service-provider/
   useSubmitProviderProfile.ts   → POST /provider/profile/submit (multipart)
   useCoverageAreas.ts           → CRUD /provider/coverage-areas
   useListings.ts                → CRUD /provider/listings
+  useProviderMenu.ts            → CRUD /provider/menu-items
   useProviderOrders.ts          → GET /provider/orders
   useAcceptOrder.ts             → PATCH .../accept
   useRejectOrder.ts             → PATCH .../reject
@@ -617,10 +765,12 @@ src/features/service-provider/
   usePromotions.ts              → (phase 2)
 
 src/features/admin/service-provider/
-  usePendingProviders.ts
-  useApproveProvider.ts
-  useRejectProvider.ts
-  useSuspendProvider.ts
+  useAdminProviders.ts          → GET /admin/providers (list + filters)
+  useAdminProviderDetail.ts     → GET /admin/providers/:providerId
+  usePendingProviders.ts        → GET /admin/providers/pending
+  useApproveProvider.ts         → PATCH /admin/providers/:userId/approve
+  useRejectProvider.ts          → PATCH /admin/providers/:userId/reject
+  useSuspendProvider.ts         → PATCH /admin/providers/:userId/suspend
   useServiceCategoriesAdmin.ts
 ```
 
@@ -635,7 +785,8 @@ Sidebar RTL:
 - الرئيسية (dashboard)
 - الملف والتحقق
 - مناطق التغطية
-- الإعلانات / المنيو
+- الإعلانات
+- منيو البروفايل
 - الأوردرات (badge للـ PENDING)
 - طلبات النقل
 - الإعلانات المميزة (phase 2)
@@ -683,7 +834,7 @@ Requirements:
 - Routes under /provider/* as documented
 - Post-login redirect based on GET /provider/profile status
 - Provider dashboard with summary cards + orders/leads management
-- Admin pages: /admin/providers/pending + /admin/service-categories
+- Admin pages: /admin/providers + /admin/providers/:id + /admin/providers/pending + /admin/service-categories
 - FCM: refresh orders on SERVICE_ORDER_RECEIVED
 - Read openapi.json or Swagger for exact shapes — do not guess
 

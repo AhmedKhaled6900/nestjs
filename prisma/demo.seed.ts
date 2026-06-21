@@ -31,6 +31,7 @@ type CreatedIds = {
   properties: Record<string, string>;
   providers: Record<string, string>;
   listings: Record<string, string>;
+  menuItems: Record<string, string>;
 };
 
 export async function seedDemoSite(prisma: PrismaClient) {
@@ -71,6 +72,7 @@ export async function seedDemoSite(prisma: PrismaClient) {
     properties: {},
     providers: {},
     listings: {},
+    menuItems: {},
   };
 
   // ── Owners ──────────────────────────────────────────────────────────────
@@ -374,13 +376,27 @@ export async function seedDemoSite(prisma: PrismaClient) {
       });
     }
 
+    if ('menu' in sp && sp.menu) {
+      for (const item of sp.menu) {
+        const menuItem = await prisma.serviceProviderMenuItem.create({
+          data: {
+            providerId: profile.id,
+            name: item.name,
+            price: item.price,
+            prepTimeMinutes: item.prepTimeMinutes,
+            sortOrder: item.sortOrder ?? 0,
+          },
+        });
+        ids.menuItems[`${sp.key}:${item.name}`] = menuItem.id;
+      }
+    }
+
     const listing = await prisma.serviceListing.create({
       data: {
         providerId: profile.id,
         categoryId,
         title: sp.listing.title,
         description: sp.description,
-        menuItems: 'menuItems' in sp.listing ? sp.listing.menuItems : undefined,
         metadata: 'metadata' in sp.listing ? sp.listing.metadata : undefined,
         status: sp.listing.status as ServiceListingStatus,
       },
@@ -393,9 +409,13 @@ export async function seedDemoSite(prisma: PrismaClient) {
   const transportProviderId = ids.providers.transport;
 
   // ── Service orders (food) ───────────────────────────────────────────────
+  const fishMenuId = ids.menuItems['restaurant:سمك مشوي'];
+  const riceMenuId = ids.menuItems['restaurant:أرز بحرية'];
+  const seabassMenuId = ids.menuItems['restaurant:سبيط مشوي'];
+
   const orderItems = [
-    { name: 'سمك مشوي', quantity: 2, unitPrice: 120 },
-    { name: 'أرز بحرية', quantity: 1, unitPrice: 45 },
+    { menuItemId: fishMenuId, name: 'سمك مشوي', quantity: 2, unitPrice: 120, prepTimeMinutes: 25 },
+    { menuItemId: riceMenuId, name: 'أرز بحرية', quantity: 1, unitPrice: 45, prepTimeMinutes: 15 },
   ];
   const subtotal = orderItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const deliveryFee = 20;
@@ -433,7 +453,7 @@ export async function seedDemoSite(prisma: PrismaClient) {
       deliveryArea: DEMO_AREAS.sidiBeshr,
       deliveryAddress: 'شارع 5، سيدي بشر',
       items: {
-        create: [{ name: 'سبيط مشوي', quantity: 1, unitPrice: 85 }],
+        create: [{ menuItemId: seabassMenuId, name: 'سبيط مشوي', quantity: 1, unitPrice: 85, prepTimeMinutes: 20 }],
       },
     },
   });

@@ -8,6 +8,10 @@ import {
 import { ProviderCoverageController } from './controllers/provider-coverage.controller';
 import { ProviderDashboardController } from './controllers/provider-dashboard.controller';
 import { ProviderListingController } from './controllers/provider-listing.controller';
+import {
+  ProviderMenuController,
+  PublicProviderMenuController,
+} from './controllers/provider-menu.controller';
 import { ProviderPromotionController } from './controllers/provider-promotion.controller';
 import {
   CustomerLeadController,
@@ -26,6 +30,7 @@ import { AdminServiceCategoryService } from './services/admin-service-category.s
 import { ProviderCoverageService } from './services/provider-coverage.service';
 import { ProviderDashboardService } from './services/provider-dashboard.service';
 import { ProviderListingService } from './services/provider-listing.service';
+import { ProviderMenuService } from './services/provider-menu.service';
 import { ProviderProfileService } from './services/provider-profile.service';
 import { ProviderPromotionService } from './services/provider-promotion.service';
 import { ServiceDiscoveryService } from './services/service-discovery.service';
@@ -39,6 +44,8 @@ import { ServiceOrderService } from './services/service-order.service';
     AdminProviderController,
     ProviderCoverageController,
     ProviderListingController,
+    ProviderMenuController,
+    PublicProviderMenuController,
     CustomerOrderController,
     CustomerMyOrderController,
     ProviderOrderController,
@@ -54,6 +61,7 @@ import { ServiceOrderService } from './services/service-order.service';
     ProviderProfileService,
     ProviderCoverageService,
     ProviderListingService,
+    ProviderMenuService,
     ServiceOrderService,
     ServiceLeadService,
     ProviderDashboardService,

@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ServiceListingStatus } from '@prisma/client';
 import {
-  IsArray,
   IsEnum,
   IsNotEmpty,
   IsObject,
@@ -19,14 +18,6 @@ export class CreateListingDto {
   @IsOptional()
   @IsString()
   description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Menu items for food providers',
-    example: [{ name: 'كشري', price: 25 }],
-  })
-  @IsOptional()
-  @IsArray()
-  menuItems?: Record<string, unknown>[];
 
   @ApiPropertyOptional({
     description: 'Extra metadata (vehicle type, capacity, etc.)',
@@ -47,11 +38,6 @@ export class UpdateListingDto {
   @IsOptional()
   @IsString()
   description?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsArray()
-  menuItems?: Record<string, unknown>[];
 
   @ApiPropertyOptional()
   @IsOptional()

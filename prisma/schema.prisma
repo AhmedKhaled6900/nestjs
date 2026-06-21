@@ -623,6 +623,7 @@ model ServiceProviderProfile {
   user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   category       ServiceCategory        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   coverageAreas  ServiceCoverageArea[]
+  menuItems      ServiceProviderMenuItem[]
   listings       ServiceListing[]
   orders         ServiceOrder[]
   leads          ServiceLead[]
@@ -648,6 +649,24 @@ model ServiceCoverageArea {
   @@index([city, area, isActive])
   @@index([providerId])
   @@map("service_coverage_areas")
+}
+
+model ServiceProviderMenuItem {
+  id               String   @id @default(uuid())
+  providerId       String
+  name             String
+  price            Decimal  @db.Decimal(14, 2)
+  prepTimeMinutes  Int
+  isActive         Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  provider   ServiceProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  orderItems ServiceOrderItem[]
+
+  @@index([providerId, isActive, sortOrder])
+  @@map("service_provider_menu_items")
 }
 
 model ServiceListing {
@@ -676,7 +695,7 @@ model ServiceOrder {
   id              String             @id @default(uuid())
   customerId      String
   providerId      String
-  listingId       String
+  listingId       String?
   status          ServiceOrderStatus @default(PENDING)
   subtotal        Decimal            @db.Decimal(14, 2)
   deliveryFee     Decimal            @default(0) @db.Decimal(14, 2)
@@ -691,7 +710,7 @@ model ServiceOrder {
 
   customer User                   @relation("CustomerServiceOrders", fields: [customerId], references: [id], onDelete: Cascade)
   provider ServiceProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  listing  ServiceListing         @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  listing  ServiceListing?        @relation(fields: [listingId], references: [id], onDelete: SetNull)
   items    ServiceOrderItem[]
 
   @@index([customerId, status])
@@ -701,16 +720,20 @@ model ServiceOrder {
 }
 
 model ServiceOrderItem {
-  id        String  @id @default(uuid())
-  orderId   String
-  name      String
-  quantity  Int     @default(1)
-  unitPrice Decimal @db.Decimal(14, 2)
-  notes     String?
+  id               String  @id @default(uuid())
+  orderId          String
+  menuItemId       String?
+  name             String
+  quantity         Int     @default(1)
+  unitPrice        Decimal @db.Decimal(14, 2)
+  prepTimeMinutes  Int?
+  notes            String?
 
-  order ServiceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order    ServiceOrder            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem ServiceProviderMenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
+  @@index([menuItemId])
   @@map("service_order_items")
 }
 

@@ -75,6 +75,14 @@ Includes:
 - React Query hooks structure
 - Ready-to-copy Cursor prompt
 
+### Website — عرض منيو المقدمين (للعميل)
+
+**[`docs/WEBSITE_SERVICES_README.md`](docs/WEBSITE_SERVICES_README.md)**
+
+- صفحات `/services` و `/services/providers/:id`
+- عرض `menuItems` من البروفايل (عام — بدون token)
+- سلة الطلب + `POST /services/orders`
+
 ---
 
 ## Tech Stack

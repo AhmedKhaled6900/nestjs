@@ -24,6 +24,7 @@ import {
   getProviderProfileOrFail,
   parseDateRange,
 } from '../helpers/provider.helpers';
+import { ProviderMenuService } from './provider-menu.service';
 
 const PROVIDER_STATUS_FLOW: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
   PENDING: ['ACCEPTED', 'REJECTED', 'CANCELLED'],
@@ -40,41 +41,53 @@ export class ServiceOrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly providerMenuService: ProviderMenuService,
   ) {}
 
   async createOrder(customerId: string, dto: CreateServiceOrderDto) {
-    if (!dto.items.length) {
-      throw new BadRequestException('Order must contain at least one item');
-    }
-
-    const listing = await this.prisma.serviceListing.findFirst({
-      where: { id: dto.listingId, status: 'ACTIVE' },
+    const provider = await this.prisma.serviceProviderProfile.findFirst({
+      where: { id: dto.providerId, status: ServiceProviderStatus.APPROVED },
       include: {
-        provider: {
-          include: {
-            category: true,
-            user: { select: { id: true, name: true } },
-          },
-        },
+        category: true,
+        user: { select: { id: true, name: true } },
       },
     });
 
-    if (!listing) {
-      throw new NotFoundException('Active listing not found');
+    if (!provider) {
+      throw new NotFoundException('Approved provider not found');
     }
 
-    if (listing.provider.status !== ServiceProviderStatus.APPROVED) {
-      throw new BadRequestException('Provider is not available');
+    let listing: { id: string; title: string } | null = null;
+    if (dto.listingId) {
+      const foundListing = await this.prisma.serviceListing.findFirst({
+        where: {
+          id: dto.listingId,
+          providerId: provider.id,
+          status: 'ACTIVE',
+        },
+        select: { id: true, title: true },
+      });
+
+      if (!foundListing) {
+        throw new BadRequestException('Active listing not found for this provider');
+      }
+
+      listing = foundListing;
     }
 
-    await this.assertCoverage(listing.provider.id, dto.deliveryCity, dto.deliveryArea);
+    await this.assertCoverage(provider.id, dto.deliveryCity, dto.deliveryArea);
 
-    const subtotal = dto.items.reduce(
-      (sum, item) => sum + item.unitPrice * item.quantity,
+    const resolvedItems = await this.providerMenuService.resolveOrderItems(
+      provider.id,
+      dto.items,
+    );
+
+    const subtotal = resolvedItems.reduce(
+      (sum, item) => sum + decimalToNumber(item.unitPrice) * item.quantity,
       0,
     );
     const deliveryFee = dto.deliveryFee ?? 0;
-    const commissionRate = decimalToNumber(listing.provider.category.commissionRate);
+    const commissionRate = decimalToNumber(provider.category.commissionRate);
     const { platformFee, providerNet } = computeOrderFees(
       subtotal,
       deliveryFee,
@@ -89,8 +102,8 @@ export class ServiceOrderService {
     const order = await this.prisma.serviceOrder.create({
       data: {
         customerId,
-        providerId: listing.providerId,
-        listingId: listing.id,
+        providerId: provider.id,
+        listingId: listing?.id,
         subtotal,
         deliveryFee,
         platformFee,
@@ -100,10 +113,12 @@ export class ServiceOrderService {
         deliveryAddress: dto.deliveryAddress,
         notes: dto.notes,
         items: {
-          create: dto.items.map((item) => ({
+          create: resolvedItems.map((item) => ({
+            menuItemId: item.menuItemId,
             name: item.name,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
+            prepTimeMinutes: item.prepTimeMinutes,
             notes: item.notes,
           })),
         },
@@ -118,12 +133,12 @@ export class ServiceOrderService {
     });
 
     this.eventEmitter.emit(NOTIFICATION_EVENTS.SERVICE_ORDER_RECEIVED, {
-      providerUserId: listing.provider.user.id,
-      providerId: listing.provider.id,
+      providerUserId: provider.user.id,
+      providerId: provider.id,
       customerId: customer.id,
       customerName: customer.name,
       orderId: order.id,
-      listingTitle: listing.title,
+      listingTitle: listing?.title ?? provider.businessName,
       subtotal,
     });
 
@@ -341,7 +356,7 @@ export class ServiceOrderService {
     id: string;
     customerId: string;
     providerId: string;
-    listingId: string;
+    listingId: string | null;
     status: ServiceOrderStatus;
     subtotal: Prisma.Decimal;
     deliveryFee: Prisma.Decimal;
@@ -355,12 +370,14 @@ export class ServiceOrderService {
     updatedAt: Date;
     items?: Array<{
       id: string;
+      menuItemId: string | null;
       name: string;
       quantity: number;
       unitPrice: Prisma.Decimal;
+      prepTimeMinutes: number | null;
       notes: string | null;
     }>;
-    listing?: { id: string; title: string };
+    listing?: { id: string; title: string } | null;
     provider?: { id: string; businessName: string; userId?: string };
     customer?: { id: string; name: string; phone?: string | null };
   }) {
@@ -380,9 +397,11 @@ export class ServiceOrderService {
       notes: order.notes,
       items: order.items?.map((item) => ({
         id: item.id,
+        menuItemId: item.menuItemId,
         name: item.name,
         quantity: item.quantity,
         unitPrice: decimalToNumber(item.unitPrice),
+        prepTimeMinutes: item.prepTimeMinutes,
         notes: item.notes,
       })),
       listing: order.listing,
