@@ -31,6 +31,53 @@ export function parseListingMenuItemsJson(value: unknown): ListingMenuItem[] {
   return value.map((item, index) => mapStoredListingMenuItem(item, index));
 }
 
+export function parseAndNormalizeMenuItemsInput(
+  value: unknown,
+): ListingMenuItem[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  let items: unknown = value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return [];
+    }
+    try {
+      items = JSON.parse(trimmed) as unknown;
+    } catch {
+      throw new BadRequestException('menuItems must be a valid JSON array');
+    }
+  }
+
+  if (!Array.isArray(items)) {
+    throw new BadRequestException('menuItems must be an array');
+  }
+
+  const coerced: ListingMenuItemInput[] = items.map((item, index) => {
+    if (!item || typeof item !== 'object') {
+      throw new BadRequestException(`menuItems[${index}] is invalid`);
+    }
+
+    const record = item as Record<string, unknown>;
+    return {
+      id: typeof record.id === 'string' ? record.id : undefined,
+      name: typeof record.name === 'string' ? record.name : String(record.name ?? ''),
+      price: Number(record.price),
+      prepTimeMinutes: Math.trunc(Number(record.prepTimeMinutes)),
+      sortOrder:
+        record.sortOrder === undefined ||
+        record.sortOrder === null ||
+        record.sortOrder === ''
+          ? undefined
+          : Math.trunc(Number(record.sortOrder)),
+    };
+  });
+
+  return normalizeListingMenuItemsInput(coerced);
+}
+
 export function normalizeListingMenuItemsInput(
   items: ListingMenuItemInput[] | undefined,
 ): ListingMenuItem[] | undefined {

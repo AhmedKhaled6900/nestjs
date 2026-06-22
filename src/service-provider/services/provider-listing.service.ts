@@ -21,7 +21,7 @@ import {
 } from '../helpers/provider.helpers';
 import {
   ListingMenuItem,
-  normalizeListingMenuItemsInput,
+  parseAndNormalizeMenuItemsInput,
   parseListingMenuItemsJson,
 } from '../helpers/listing-menu.helpers';
 import {
@@ -97,7 +97,7 @@ export class ProviderListingService {
       profile.id,
     );
 
-    const menuItems = normalizeListingMenuItemsInput(dto.menuItems) ?? [];
+    const menuItems = parseAndNormalizeMenuItemsInput(dto.menuItems) ?? [];
 
     const listing = await this.prisma.serviceListing.create({
       data: {
@@ -150,7 +150,7 @@ export class ProviderListingService {
     const menuItems =
       dto.menuItems === undefined
         ? undefined
-        : normalizeListingMenuItemsInput(dto.menuItems) ?? [];
+        : parseAndNormalizeMenuItemsInput(dto.menuItems) ?? [];
 
     const updated = await this.prisma.serviceListing.update({
       where: { id: listing.id },
