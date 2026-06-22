@@ -1431,6 +1431,20 @@ openssl rand -base64 48
 
 - If using `prisma dev`, add `?pgbouncer=true` to `DATABASE_URL`
 
+### Uploaded images return 404 on Railway
+
+Railway uses an **ephemeral filesystem** — files in `/app/uploads` are **deleted on every redeploy**.
+
+**Recommended — Cloudinary:**
+
+1. Create account at [cloudinary.com](https://cloudinary.com)
+2. Add Railway variables: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+3. Redeploy, then **re-upload** logos and listing images (old `/uploads/...` URLs in the database no longer exist on disk)
+
+New uploads return `https://res.cloudinary.com/...` URLs that persist.
+
+**Alternative — Railway Volume:** mount a volume at `/app/uploads`, redeploy, re-upload.
+
 ### `401 Authentication required`
 
 - Missing or expired JWT

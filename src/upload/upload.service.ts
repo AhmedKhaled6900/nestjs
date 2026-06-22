@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { existsSync } from 'fs';
 import { mkdir, unlink, writeFile } from 'fs/promises';
@@ -15,8 +22,38 @@ import {
 } from './upload.constants';
 
 @Injectable()
-export class UploadService {
+export class UploadService implements OnModuleInit {
+  private readonly logger = new Logger(UploadService.name);
   private readonly uploadRoot = join(process.cwd(), 'uploads');
+  private readonly useCloudinary: boolean;
+
+  constructor(private readonly configService: ConfigService) {
+    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
+    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
+    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
+
+    this.useCloudinary = Boolean(cloudName && apiKey && apiSecret);
+
+    if (this.useCloudinary) {
+      cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+        secure: true,
+      });
+      this.logger.log('Upload storage: Cloudinary');
+    } else if (this.configService.get<string>('NODE_ENV') === 'production') {
+      this.logger.warn(
+        'Upload storage: local disk — on Railway files are lost on redeploy. Set CLOUDINARY_* env vars or attach a volume at /app/uploads.',
+      );
+    }
+  }
+
+  async onModuleInit() {
+    if (!this.useCloudinary) {
+      await mkdir(this.uploadRoot, { recursive: true });
+    }
+  }
 
   async saveKycImage(
     file: Express.Multer.File,
@@ -24,6 +61,14 @@ export class UploadService {
     fieldName: string,
   ): Promise<string> {
     this.validateImage(file, fieldName);
+
+    if (this.useCloudinary) {
+      return this.uploadImageToCloudinary(
+        file,
+        `aqar/kyc/${userId}`,
+        `${fieldName}-${randomUUID()}`,
+      );
+    }
 
     const extension = this.resolveExtension(file);
     const directory = join(this.uploadRoot, KYC_UPLOAD_SUBDIR, userId);
@@ -42,6 +87,14 @@ export class UploadService {
   ): Promise<string> {
     this.validateImage(file, 'image', MAX_PROPERTY_IMAGE_SIZE_BYTES);
 
+    if (this.useCloudinary) {
+      return this.uploadImageToCloudinary(
+        file,
+        `aqar/properties/${propertyId}`,
+        randomUUID(),
+      );
+    }
+
     const extension = this.resolveExtension(file);
     const directory = join(this.uploadRoot, PROPERTY_UPLOAD_SUBDIR, propertyId);
     const filename = `${randomUUID()}${extension}`;
@@ -58,6 +111,14 @@ export class UploadService {
     providerId: string,
   ): Promise<string> {
     this.validateImage(file, 'image', MAX_PROPERTY_IMAGE_SIZE_BYTES);
+
+    if (this.useCloudinary) {
+      return this.uploadImageToCloudinary(
+        file,
+        `aqar/service-listings/${providerId}`,
+        randomUUID(),
+      );
+    }
 
     const extension = this.resolveExtension(file);
     const directory = join(
@@ -79,6 +140,14 @@ export class UploadService {
     propertyId: string,
   ): Promise<string> {
     this.validateVideo(file);
+
+    if (this.useCloudinary) {
+      return this.uploadVideoToCloudinary(
+        file,
+        `aqar/properties/${propertyId}`,
+        `video-${randomUUID()}`,
+      );
+    }
 
     const extension = this.resolveVideoExtension(file);
     const directory = join(this.uploadRoot, PROPERTY_UPLOAD_SUBDIR, propertyId);
@@ -111,15 +180,99 @@ export class UploadService {
     return null;
   }
 
-  async deleteLocalFile(publicPath: string | null | undefined): Promise<void> {
-    if (!publicPath?.startsWith('/uploads/')) {
+  async deleteLocalFile(storedValue: string | null | undefined): Promise<void> {
+    if (!storedValue) {
       return;
     }
 
-    const absolutePath = join(process.cwd(), publicPath.replace(/^\//, ''));
+    if (storedValue.startsWith('http://') || storedValue.startsWith('https://')) {
+      if (this.useCloudinary && storedValue.includes('res.cloudinary.com')) {
+        const publicId = this.extractCloudinaryPublicId(storedValue);
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId, {
+            resource_type: 'auto',
+          });
+        }
+      }
+      return;
+    }
+
+    if (!storedValue.startsWith('/uploads/')) {
+      return;
+    }
+
+    const absolutePath = join(process.cwd(), storedValue.replace(/^\//, ''));
     if (existsSync(absolutePath)) {
       await unlink(absolutePath);
     }
+  }
+
+  private uploadImageToCloudinary(
+    file: Express.Multer.File,
+    folder: string,
+    publicId: string,
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          public_id: publicId,
+          resource_type: 'image',
+          overwrite: true,
+        },
+        (error, result) => {
+          if (error || !result?.secure_url) {
+            reject(
+              error ?? new BadRequestException('Failed to upload image to Cloudinary'),
+            );
+            return;
+          }
+          resolve(result.secure_url);
+        },
+      );
+
+      stream.end(file.buffer);
+    });
+  }
+
+  private uploadVideoToCloudinary(
+    file: Express.Multer.File,
+    folder: string,
+    publicId: string,
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          public_id: publicId,
+          resource_type: 'video',
+          overwrite: true,
+        },
+        (error, result) => {
+          if (error || !result?.secure_url) {
+            reject(
+              error ?? new BadRequestException('Failed to upload video to Cloudinary'),
+            );
+            return;
+          }
+          resolve(result.secure_url);
+        },
+      );
+
+      stream.end(file.buffer);
+    });
+  }
+
+  private extractCloudinaryPublicId(url: string): string | null {
+    const marker = '/upload/';
+    const markerIndex = url.indexOf(marker);
+    if (markerIndex === -1) {
+      return null;
+    }
+
+    let path = url.slice(markerIndex + marker.length);
+    path = path.replace(/^v\d+\//, '');
+    return path.replace(/\.[^/.]+$/, '');
   }
 
   private validateImage(
