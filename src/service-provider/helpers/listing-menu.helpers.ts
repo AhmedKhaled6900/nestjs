@@ -20,15 +20,13 @@ export interface ListingMenuItemInput {
 const MAX_LISTING_MENU_ITEMS = 100;
 
 export function parseListingMenuItemsJson(value: unknown): ListingMenuItem[] {
-  if (value === null || value === undefined) {
+  if (value === null || value === undefined || !Array.isArray(value)) {
     return [];
   }
 
-  if (!Array.isArray(value)) {
-    throw new BadRequestException('menuItems must be a JSON array');
-  }
-
-  return value.map((item, index) => mapStoredListingMenuItem(item, index));
+  return value
+    .map((item, index) => mapListingMenuItemLoose(item, index))
+    .filter((item): item is ListingMenuItem => item !== null);
 }
 
 export function parseAndNormalizeMenuItemsInput(
@@ -181,30 +179,41 @@ export function resolveListingOrderItems(
   });
 }
 
-function mapStoredListingMenuItem(item: unknown, index: number): ListingMenuItem {
+function mapListingMenuItemLoose(
+  item: unknown,
+  index: number,
+): ListingMenuItem | null {
   if (!item || typeof item !== 'object') {
-    throw new BadRequestException(`menuItems[${index}] is invalid`);
+    return null;
   }
 
   const record = item as Record<string, unknown>;
-  const id = typeof record.id === 'string' ? record.id : '';
   const name = typeof record.name === 'string' ? record.name.trim() : '';
+  if (!name) {
+    return null;
+  }
+
   const price = Number(record.price);
-  const prepTimeMinutes = Number(record.prepTimeMinutes);
-  const sortOrder =
-    record.sortOrder === undefined ? index : Number(record.sortOrder);
-
-  if (!id || !name || !Number.isFinite(price) || price < 0) {
-    throw new BadRequestException(`menuItems[${index}] is invalid`);
+  if (!Number.isFinite(price) || price < 0) {
+    return null;
   }
 
+  const prepTimeMinutes = Math.trunc(Number(record.prepTimeMinutes));
   if (!Number.isInteger(prepTimeMinutes) || prepTimeMinutes < 1) {
-    throw new BadRequestException(`menuItems[${index}].prepTimeMinutes is invalid`);
+    return null;
   }
 
-  if (!Number.isInteger(sortOrder) || sortOrder < 0) {
-    throw new BadRequestException(`menuItems[${index}].sortOrder is invalid`);
-  }
+  const sortOrderRaw =
+    record.sortOrder === undefined || record.sortOrder === null
+      ? index
+      : Math.trunc(Number(record.sortOrder));
+  const sortOrder =
+    Number.isInteger(sortOrderRaw) && sortOrderRaw >= 0 ? sortOrderRaw : index;
+
+  const id =
+    typeof record.id === 'string' && record.id.trim()
+      ? record.id.trim()
+      : randomUUID();
 
   return { id, name, price, prepTimeMinutes, sortOrder };
 }
