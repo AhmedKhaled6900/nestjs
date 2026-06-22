@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ProviderPromotionStatus,
   ServiceListingStatus,
@@ -9,12 +10,17 @@ import {
   resolvePagination,
 } from '../../common/dto/pagination.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UploadService } from '../../upload/upload.service';
 import { QueryProvidersDto } from '../dto/discovery.dto';
 import { decimalToNumber } from '../helpers/provider.helpers';
 
 @Injectable()
 export class ServiceDiscoveryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: UploadService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async listCategories() {
     const categories = await this.prisma.serviceCategory.findMany({
@@ -161,6 +167,8 @@ export class ServiceDiscoveryService {
         title: listing.title,
         description: listing.description,
         deliveryFee: decimalToNumber(listing.deliveryFee),
+        image: this.toPublicUrl(listing.image),
+        link: listing.link,
         metadata: listing.metadata,
       })),
     };
@@ -180,5 +188,17 @@ export class ServiceDiscoveryService {
     }
 
     return found.id;
+  }
+
+  private toPublicUrl(storedValue: string | null): string | null {
+    if (!storedValue) {
+      return null;
+    }
+
+    const appUrl = this.configService
+      .get<string>('APP_URL', 'http://localhost:3000')
+      .replace(/\/$/, '');
+
+    return this.uploadService.toPublicUrl(storedValue, appUrl);
   }
 }

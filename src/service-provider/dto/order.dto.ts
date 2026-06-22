@@ -10,14 +10,24 @@ import {
   IsString,
   IsUUID,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 export class OrderMenuItemDto {
-  @ApiProperty({ description: 'Profile menu item id' })
+  @ApiPropertyOptional({ description: 'Profile menu item id (preferred)' })
+  @ValidateIf((item: OrderMenuItemDto) => !item.name)
   @IsUUID()
-  menuItemId!: string;
+  menuItemId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Fallback: match active profile menu item by name',
+  })
+  @ValidateIf((item: OrderMenuItemDto) => !item.menuItemId)
+  @IsString()
+  @IsNotEmpty()
+  name?: string;
 
   @ApiProperty({ example: 2 })
   @IsInt()
@@ -31,14 +41,17 @@ export class OrderMenuItemDto {
 }
 
 export class CreateServiceOrderDto {
-  @ApiProperty({ description: 'Service provider profile id' })
+  @ApiPropertyOptional({
+    description: 'Service provider profile id (required unless listingId is sent)',
+  })
+  @ValidateIf((dto: CreateServiceOrderDto) => !dto.listingId)
   @IsUUID()
-  providerId!: string;
+  providerId?: string;
 
   @ApiPropertyOptional({
-    description: 'Optional listing/ad attribution if customer came from a specific ad',
+    description: 'Listing/ad id — providerId can be derived from this',
   })
-  @IsOptional()
+  @ValidateIf((dto: CreateServiceOrderDto) => !dto.providerId)
   @IsUUID()
   listingId?: string;
 

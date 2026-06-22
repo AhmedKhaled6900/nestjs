@@ -101,6 +101,35 @@ export class ProviderProfileService {
     };
   }
 
+  async updateLogo(userId: string, logoFile: Express.Multer.File) {
+    const profile = await getProviderProfileOrFail(this.prisma, userId);
+
+    if (profile.status === ServiceProviderStatus.SUSPENDED) {
+      throw new ForbiddenException('Suspended providers cannot update profile');
+    }
+
+    if (!logoFile) {
+      throw new BadRequestException('Logo image is required');
+    }
+
+    await this.uploadService.deleteLocalFile(profile.logo);
+    const logo = await this.uploadService.saveKycImage(
+      logoFile,
+      userId,
+      'providerLogo',
+    );
+
+    await this.prisma.serviceProviderProfile.update({
+      where: { id: profile.id },
+      data: { logo },
+    });
+
+    return {
+      message: 'Provider logo updated',
+      profile: await this.mapProfileWithRelations(profile.id),
+    };
+  }
+
   async submitForReview(
     userId: string,
     dto: SubmitProviderProfileDto,

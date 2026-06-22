@@ -159,6 +159,8 @@ export class AdminProviderService {
         title: listing.title,
         description: listing.description,
         deliveryFee: decimalToNumber(listing.deliveryFee),
+        image: this.toPublicUrl(listing.image),
+        link: listing.link,
         metadata: listing.metadata,
         status: listing.status,
         createdAt: listing.createdAt,

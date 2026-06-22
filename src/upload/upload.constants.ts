@@ -1,5 +1,6 @@
 export const KYC_UPLOAD_SUBDIR = 'kyc';
 export const PROPERTY_UPLOAD_SUBDIR = 'properties';
+export const SERVICE_LISTING_UPLOAD_SUBDIR = 'service-listings';
 export const ALLOWED_IMAGE_MIMES = [
   'image/jpeg',
   'image/png',

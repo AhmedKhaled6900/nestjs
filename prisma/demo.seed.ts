@@ -412,6 +412,8 @@ export async function seedDemoSite(prisma: PrismaClient) {
         title: sp.listing.title,
         description: sp.description,
         deliveryFee: 'deliveryFee' in sp.listing ? sp.listing.deliveryFee : 0,
+        image: 'image' in sp.listing ? sp.listing.image : undefined,
+        link: 'link' in sp.listing ? sp.listing.link : undefined,
         metadata: 'metadata' in sp.listing ? sp.listing.metadata : undefined,
         status: sp.listing.status as ServiceListingStatus,
       },

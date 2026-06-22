@@ -46,8 +46,10 @@ export class ServiceOrderService {
   ) {}
 
   async createOrder(customerId: string, dto: CreateServiceOrderDto) {
+    const providerId = await this.resolveProviderId(dto);
+
     const provider = await this.prisma.serviceProviderProfile.findFirst({
-      where: { id: dto.providerId, status: ServiceProviderStatus.APPROVED },
+      where: { id: providerId, status: ServiceProviderStatus.APPROVED },
       include: {
         category: true,
         user: { select: { id: true, name: true } },
@@ -100,7 +102,7 @@ export class ServiceOrderService {
 
     const customer = await this.prisma.user.findUniqueOrThrow({
       where: { id: customerId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, phone: true },
     });
 
     const order = await this.prisma.serviceOrder.create({
@@ -130,6 +132,7 @@ export class ServiceOrderService {
       include: {
         items: true,
         listing: { select: { id: true, title: true } },
+        customer: { select: { id: true, name: true, phone: true } },
         provider: {
           select: { id: true, businessName: true, userId: true },
         },
@@ -414,5 +417,26 @@ export class ServiceOrderService {
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     };
+  }
+
+  private async resolveProviderId(dto: CreateServiceOrderDto) {
+    if (dto.providerId) {
+      return dto.providerId;
+    }
+
+    if (dto.listingId) {
+      const listing = await this.prisma.serviceListing.findFirst({
+        where: { id: dto.listingId, status: 'ACTIVE' },
+        select: { providerId: true },
+      });
+
+      if (!listing) {
+        throw new BadRequestException('Active listing not found');
+      }
+
+      return listing.providerId;
+    }
+
+    throw new BadRequestException('providerId or listingId is required');
   }
 }

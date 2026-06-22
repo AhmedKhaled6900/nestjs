@@ -304,6 +304,17 @@ Permission: `provider.profile.update`
 
 > `menuDeliveryFee` = سعر توصيل **ثابت لكل منيو البروفايل** (مرة واحدة، مش على كل صنف).
 
+#### PATCH `/provider/profile/logo`
+
+Permission: `provider.profile.update`  
+**Content-Type:** `multipart/form-data`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `logo` | file (JPEG/PNG/WebP) | **yes** |
+
+→ تحديث صورة البروفايل في أي وقت (ما عدا `SUSPENDED`).
+
 #### POST `/provider/profile/submit`
 
 Permission: `provider.profile.update`  
@@ -347,27 +358,23 @@ Permission: `provider.profile.update`
 
 #### POST `/provider/listings`
 
-```json
-{
-  "title": "عرض الصيف — توصيل مجاني",
-  "description": "...",
-  "deliveryFee": 10,
-  "metadata": { "validUntil": "2026-08-31" }
-}
-```
+Permission: `provider.listing.manage`  
+**Content-Type:** `multipart/form-data`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `title` | string | **yes** |
+| `image` | file (JPEG/PNG/WebP) | **yes** |
+| `description` | string | no |
+| `deliveryFee` | number | no |
+| `link` | URL string | no |
+| `metadata` | JSON string | no |
 
 → يُنشأ بحالة `DRAFT`. **المنيو الثابت** يُدار من `/provider/menu-items` وليس من الإعلان.
 
 #### PATCH `/provider/listings/:id`
 
-```json
-{
-  "title": "...",
-  "description": "...",
-  "metadata": {...},
-  "status": "ACTIVE"
-}
-```
+**Content-Type:** `multipart/form-data` — نفس الحقول + `image` اختياري + `status`
 
 > `status: ACTIVE` يتطلب provider `APPROVED`.
 
@@ -534,6 +541,28 @@ Permission: `service.order.create`
 - `listingId` **اختياري** — لربط الطلب بإعلان معيّن إن جاء العميل من إعلان.
 
 → FCM لمقدم الخدمة (`SERVICE_ORDER_RECEIVED`).
+
+**Response (201):**
+
+```json
+{
+  "message": "Order placed successfully",
+  "order": {
+    "id": "uuid",
+    "status": "PENDING",
+    "subtotal": 280,
+    "deliveryFee": 15,
+    "customer": {
+      "id": "uuid",
+      "name": "ياسمين محمود",
+      "phone": "+201000000201"
+    },
+    "items": [...],
+    "listing": { "id": "...", "title": "..." },
+    "provider": { "id": "...", "businessName": "مطعم البحر" }
+  }
+}
+```
 
 #### GET `/services/my/orders?page=&limit=`
 

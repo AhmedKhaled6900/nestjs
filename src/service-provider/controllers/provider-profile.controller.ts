@@ -8,15 +8,17 @@ import {
   Post,
   Query,
   UploadedFiles,
+  UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiConsumes,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator';
@@ -31,6 +33,9 @@ import {
   SuspendProviderDto,
   UpdateProviderProfileDto,
 } from '../dto/provider-profile.dto';
+import {
+  UpdateProviderLogoMultipartDto,
+} from '../dto/listing.dto';
 import { QueryAdminProvidersDto } from '../dto/admin-provider.dto';
 import { AdminProviderService } from '../services/admin-provider.service';
 import { ProviderProfileService } from '../services/provider-profile.service';
@@ -46,6 +51,11 @@ const providerKycUpload = FileFieldsInterceptor(
     limits: { fileSize: MAX_KYC_IMAGE_SIZE_BYTES },
   },
 );
+
+const providerLogoUpload = FileInterceptor('logo', {
+  storage: memoryStorage(),
+  limits: { fileSize: MAX_KYC_IMAGE_SIZE_BYTES },
+});
 
 @ApiTags('Provider Profile')
 @ApiBearerAuth('access-token')
@@ -72,12 +82,25 @@ export class ProviderProfileController {
 
   @Patch()
   @RequirePermissions('provider.profile.update')
-  @ApiOperation({ summary: 'Update service provider profile' })
+  @ApiOperation({ summary: 'Update service provider profile (JSON)' })
   updateProfile(
     @CurrentUser() user: AuthUser,
     @Body() dto: UpdateProviderProfileDto,
   ) {
     return this.providerProfileService.updateProfile(user.id, dto);
+  }
+
+  @Patch('logo')
+  @RequirePermissions('provider.profile.update')
+  @UseInterceptors(providerLogoUpload)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateProviderLogoMultipartDto })
+  @ApiOperation({ summary: 'Update provider logo image' })
+  updateLogo(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() logo: Express.Multer.File,
+  ) {
+    return this.providerProfileService.updateLogo(user.id, logo);
   }
 
   @Post('submit')

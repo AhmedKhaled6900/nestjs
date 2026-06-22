@@ -102,38 +102,73 @@ export class ProviderMenuService {
 
   async resolveOrderItems(
     providerId: string,
-    items: Array<{ menuItemId: string; quantity: number; notes?: string }>,
+    items: Array<{
+      menuItemId?: string;
+      name?: string;
+      quantity: number;
+      notes?: string;
+    }>,
   ) {
     if (!items.length) {
       throw new BadRequestException('Order must contain at least one item');
     }
 
-    const menuItemIds = items.map((item) => item.menuItemId);
-    const menuItems = await this.prisma.serviceProviderMenuItem.findMany({
-      where: {
-        id: { in: menuItemIds },
-        providerId,
-        isActive: true,
-      },
-    });
+    const menuItemIds = items
+      .map((item) => item.menuItemId)
+      .filter((id): id is string => Boolean(id));
 
-    if (menuItems.length !== menuItemIds.length) {
+    const menuItemsById =
+      menuItemIds.length > 0
+        ? await this.prisma.serviceProviderMenuItem.findMany({
+            where: {
+              id: { in: menuItemIds },
+              providerId,
+              isActive: true,
+            },
+          })
+        : [];
+
+    if (menuItemIds.length > 0 && menuItemsById.length !== menuItemIds.length) {
       throw new BadRequestException('One or more menu items are invalid or inactive');
     }
 
-    const menuById = new Map(menuItems.map((item) => [item.id, item]));
+    const menuById = new Map(menuItemsById.map((item) => [item.id, item]));
 
-    return items.map((item) => {
-      const menu = menuById.get(item.menuItemId)!;
-      return {
+    const resolved = [];
+
+    for (const item of items) {
+      let menu = item.menuItemId ? menuById.get(item.menuItemId) : undefined;
+
+      if (!menu && item.name) {
+        const byName = await this.prisma.serviceProviderMenuItem.findFirst({
+          where: {
+            providerId,
+            name: item.name,
+            isActive: true,
+          },
+        });
+        menu = byName ?? undefined;
+      }
+
+      if (!menu) {
+        throw new BadRequestException(
+          item.menuItemId
+            ? `Menu item not found: ${item.menuItemId}`
+            : `Menu item not found by name: ${item.name}`,
+        );
+      }
+
+      resolved.push({
         menuItemId: menu.id,
         name: menu.name,
         quantity: item.quantity,
         unitPrice: menu.price,
         prepTimeMinutes: menu.prepTimeMinutes,
         notes: item.notes,
-      };
-    });
+      });
+    }
+
+    return resolved;
   }
 
   private async findOwnedItemOrFail(providerId: string, itemId: string) {

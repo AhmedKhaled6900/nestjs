@@ -97,6 +97,8 @@ export const DEMO_SERVICE_PROVIDERS = [
       title: 'عرض الصيف — توصيل مجاني فوق 200 جنيه',
       status: 'ACTIVE' as const,
       deliveryFee: 10,
+      image: PLACEHOLDER_IMAGE('listing-restaurant'),
+      link: 'https://example.com/promo',
     },
   },
   {
@@ -118,6 +120,7 @@ export const DEMO_SERVICE_PROVIDERS = [
       title: 'خصم 10% على المشروبات الساخنة',
       status: 'ACTIVE' as const,
       deliveryFee: 8,
+      image: PLACEHOLDER_IMAGE('listing-cafe'),
     },
   },
   {
@@ -133,6 +136,7 @@ export const DEMO_SERVICE_PROVIDERS = [
     listing: {
       title: 'خدمات النقل',
       status: 'ACTIVE' as const,
+      image: PLACEHOLDER_IMAGE('listing-transport'),
       metadata: {
         vehicleTypes: ['microbus', 'toktok'],
         capacity: 14,

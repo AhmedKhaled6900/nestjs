@@ -6,13 +6,34 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator';
 import { AuthUser } from '../../auth/interfaces/auth.interface';
-import { CreateListingDto, UpdateListingDto } from '../dto/listing.dto';
+import { MAX_PROPERTY_IMAGE_SIZE_BYTES } from '../../upload/upload.constants';
+import {
+  CreateListingDto,
+  CreateListingMultipartDto,
+  UpdateListingDto,
+  UpdateListingMultipartDto,
+} from '../dto/listing.dto';
 import { ProviderListingService } from '../services/provider-listing.service';
+
+const listingImageInterceptor = FileInterceptor('image', {
+  storage: memoryStorage(),
+  limits: { fileSize: MAX_PROPERTY_IMAGE_SIZE_BYTES },
+});
 
 @ApiTags('Provider Listings')
 @ApiBearerAuth('access-token')
@@ -29,20 +50,31 @@ export class ProviderListingController {
 
   @Post()
   @RequirePermissions('provider.listing.manage')
-  @ApiOperation({ summary: 'Create service listing' })
-  create(@CurrentUser() user: AuthUser, @Body() dto: CreateListingDto) {
-    return this.listingService.createListing(user.id, dto);
+  @UseInterceptors(listingImageInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateListingMultipartDto })
+  @ApiOperation({ summary: 'Create service listing (image required)' })
+  create(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateListingDto,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    return this.listingService.createListing(user.id, dto, image);
   }
 
   @Patch(':id')
   @RequirePermissions('provider.listing.manage')
-  @ApiOperation({ summary: 'Update service listing' })
+  @UseInterceptors(listingImageInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateListingMultipartDto })
+  @ApiOperation({ summary: 'Update service listing (optional new image)' })
   update(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: UpdateListingDto,
+    @UploadedFile() image?: Express.Multer.File,
   ) {
-    return this.listingService.updateListing(user.id, id, dto);
+    return this.listingService.updateListing(user.id, id, dto, image);
   }
 
   @Delete(':id')

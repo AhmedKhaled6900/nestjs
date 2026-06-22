@@ -3,8 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ServiceListingStatus, ServiceOrderStatus, ServiceProviderStatus, Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import {
+  Prisma,
+  ServiceListingStatus,
+  ServiceOrderStatus,
+  ServiceProviderStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UploadService } from '../../upload/upload.service';
 import { CreateListingDto, UpdateListingDto } from '../dto/listing.dto';
 import {
   assertProviderApproved,
@@ -15,7 +22,11 @@ import {
 
 @Injectable()
 export class ProviderListingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: UploadService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async listMyListings(userId: string) {
     const profile = await getProviderProfileOrFail(this.prisma, userId);
@@ -28,9 +39,22 @@ export class ProviderListingService {
     return { items: listings.map((l) => this.mapListing(l)) };
   }
 
-  async createListing(userId: string, dto: CreateListingDto) {
+  async createListing(
+    userId: string,
+    dto: CreateListingDto,
+    imageFile: Express.Multer.File,
+  ) {
     const profile = await getProviderProfileOrFail(this.prisma, userId);
     assertProviderCanManage(profile);
+
+    if (!imageFile) {
+      throw new BadRequestException('Listing image is required');
+    }
+
+    const image = await this.uploadService.saveServiceListingImage(
+      imageFile,
+      profile.id,
+    );
 
     const listing = await this.prisma.serviceListing.create({
       data: {
@@ -39,6 +63,8 @@ export class ProviderListingService {
         title: dto.title,
         description: dto.description,
         deliveryFee: dto.deliveryFee ?? 0,
+        image,
+        link: dto.link,
         metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
         status: ServiceListingStatus.DRAFT,
       },
@@ -50,7 +76,12 @@ export class ProviderListingService {
     };
   }
 
-  async updateListing(userId: string, listingId: string, dto: UpdateListingDto) {
+  async updateListing(
+    userId: string,
+    listingId: string,
+    dto: UpdateListingDto,
+    imageFile?: Express.Multer.File,
+  ) {
     const profile = await getProviderProfileOrFail(this.prisma, userId);
     assertProviderCanManage(profile);
 
@@ -58,6 +89,18 @@ export class ProviderListingService {
 
     if (dto.status === ServiceListingStatus.ACTIVE) {
       assertProviderApproved(profile);
+      if (!listing.image && !imageFile) {
+        throw new BadRequestException('Listing image is required before publishing');
+      }
+    }
+
+    let image = listing.image;
+    if (imageFile) {
+      await this.uploadService.deleteLocalFile(listing.image);
+      image = await this.uploadService.saveServiceListingImage(
+        imageFile,
+        profile.id,
+      );
     }
 
     const updated = await this.prisma.serviceListing.update({
@@ -66,6 +109,8 @@ export class ProviderListingService {
         title: dto.title,
         description: dto.description,
         deliveryFee: dto.deliveryFee,
+        image,
+        link: dto.link,
         metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
         status: dto.status,
       },
@@ -86,7 +131,14 @@ export class ProviderListingService {
     const activeOrders = await this.prisma.serviceOrder.count({
       where: {
         listingId: listing.id,
-        status: { in: [ServiceOrderStatus.PENDING, ServiceOrderStatus.ACCEPTED, ServiceOrderStatus.PREPARING, ServiceOrderStatus.OUT_FOR_DELIVERY] },
+        status: {
+          in: [
+            ServiceOrderStatus.PENDING,
+            ServiceOrderStatus.ACCEPTED,
+            ServiceOrderStatus.PREPARING,
+            ServiceOrderStatus.OUT_FOR_DELIVERY,
+          ],
+        },
       },
     });
 
@@ -94,6 +146,7 @@ export class ProviderListingService {
       throw new BadRequestException('Cannot delete listing with active orders');
     }
 
+    await this.uploadService.deleteLocalFile(listing.image);
     await this.prisma.serviceListing.delete({ where: { id: listing.id } });
 
     return { message: 'Listing deleted' };
@@ -111,13 +164,15 @@ export class ProviderListingService {
     return listing;
   }
 
-  private mapListing(listing: {
+  mapListing(listing: {
     id: string;
     providerId: string;
     categoryId: string;
     title: string;
     description: string | null;
     deliveryFee: { toNumber?: () => number } | number;
+    image: string | null;
+    link: string | null;
     metadata: unknown;
     status: ServiceListingStatus;
     createdAt: Date;
@@ -130,10 +185,24 @@ export class ProviderListingService {
       title: listing.title,
       description: listing.description,
       deliveryFee: decimalToNumber(listing.deliveryFee),
+      image: this.toPublicUrl(listing.image),
+      link: listing.link,
       metadata: listing.metadata,
       status: listing.status,
       createdAt: listing.createdAt,
       updatedAt: listing.updatedAt,
     };
+  }
+
+  private toPublicUrl(storedValue: string | null): string | null {
+    if (!storedValue) {
+      return null;
+    }
+
+    const appUrl = this.configService
+      .get<string>('APP_URL', 'http://localhost:3000')
+      .replace(/\/$/, '');
+
+    return this.uploadService.toPublicUrl(storedValue, appUrl);
   }
 }

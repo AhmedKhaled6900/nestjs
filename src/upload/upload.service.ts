@@ -11,6 +11,7 @@ import {
   MAX_PROPERTY_IMAGE_SIZE_BYTES,
   MAX_PROPERTY_VIDEO_SIZE_BYTES,
   PROPERTY_UPLOAD_SUBDIR,
+  SERVICE_LISTING_UPLOAD_SUBDIR,
 } from './upload.constants';
 
 @Injectable()
@@ -50,6 +51,27 @@ export class UploadService {
     await writeFile(absolutePath, file.buffer);
 
     return `/uploads/${PROPERTY_UPLOAD_SUBDIR}/${propertyId}/${filename}`;
+  }
+
+  async saveServiceListingImage(
+    file: Express.Multer.File,
+    providerId: string,
+  ): Promise<string> {
+    this.validateImage(file, 'image', MAX_PROPERTY_IMAGE_SIZE_BYTES);
+
+    const extension = this.resolveExtension(file);
+    const directory = join(
+      this.uploadRoot,
+      SERVICE_LISTING_UPLOAD_SUBDIR,
+      providerId,
+    );
+    const filename = `${randomUUID()}${extension}`;
+    const absolutePath = join(directory, filename);
+
+    await mkdir(directory, { recursive: true });
+    await writeFile(absolutePath, file.buffer);
+
+    return `/uploads/${SERVICE_LISTING_UPLOAD_SUBDIR}/${providerId}/${filename}`;
   }
 
   async savePropertyVideo(
