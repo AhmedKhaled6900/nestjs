@@ -3,11 +3,16 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/decorators/permissions.decorator';
+import { UploadModule } from '../upload/upload.module';
+import { UploadService } from '../upload/upload.service';
 
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   /** Liveness — no DB check (used by Railway/Docker health probes) */
   @Public()
@@ -15,6 +20,7 @@ export class HealthController {
   check() {
     return {
       status: 'ok',
+      uploadStorage: this.uploadService.getStorageMode(),
       timestamp: new Date().toISOString(),
     };
   }
@@ -33,6 +39,7 @@ export class HealthController {
 }
 
 @Module({
+  imports: [UploadModule],
   controllers: [HealthController],
 })
 export class HealthModule {}

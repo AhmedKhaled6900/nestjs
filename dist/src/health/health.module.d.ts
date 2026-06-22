@@ -1,9 +1,12 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
 export declare class HealthController {
     private readonly prisma;
-    constructor(prisma: PrismaService);
+    private readonly uploadService;
+    constructor(prisma: PrismaService, uploadService: UploadService);
     check(): {
         status: string;
+        uploadStorage: "cloudinary" | "local";
         timestamp: string;
     };
     ready(): Promise<{

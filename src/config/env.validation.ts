@@ -108,6 +108,10 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  CLOUDINARY_URL?: string;
+
+  @IsOptional()
+  @IsString()
   CLOUDINARY_CLOUD_NAME?: string;
 
   @IsOptional()
@@ -152,5 +156,5 @@ export function validate(config: Record<string, unknown>) {
     throw new Error(errors.toString());
   }
 
-  return validated;
+  return { ...normalized, ...validated };
 }

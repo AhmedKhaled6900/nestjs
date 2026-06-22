@@ -28,25 +28,49 @@ export class UploadService implements OnModuleInit {
   private readonly useCloudinary: boolean;
 
   constructor(private readonly configService: ConfigService) {
-    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
-    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
-    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
+    const cloudinaryUrl =
+      process.env.CLOUDINARY_URL ??
+      this.configService.get<string>('CLOUDINARY_URL');
 
-    this.useCloudinary = Boolean(cloudName && apiKey && apiSecret);
+    if (cloudinaryUrl && !process.env.CLOUDINARY_URL) {
+      process.env.CLOUDINARY_URL = cloudinaryUrl;
+    }
+
+    const cloudName =
+      process.env.CLOUDINARY_CLOUD_NAME ??
+      this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
+    const apiKey =
+      process.env.CLOUDINARY_API_KEY ??
+      this.configService.get<string>('CLOUDINARY_API_KEY');
+    const apiSecret =
+      process.env.CLOUDINARY_API_SECRET ??
+      this.configService.get<string>('CLOUDINARY_API_SECRET');
+
+    this.useCloudinary = Boolean(
+      cloudinaryUrl || (cloudName && apiKey && apiSecret),
+    );
 
     if (this.useCloudinary) {
-      cloudinary.config({
-        cloud_name: cloudName,
-        api_key: apiKey,
-        api_secret: apiSecret,
-        secure: true,
-      });
+      if (cloudinaryUrl) {
+        cloudinary.config({ secure: true });
+      } else {
+        cloudinary.config({
+          cloud_name: cloudName,
+          api_key: apiKey,
+          api_secret: apiSecret,
+          secure: true,
+        });
+      }
       this.logger.log('Upload storage: Cloudinary');
     } else if (this.configService.get<string>('NODE_ENV') === 'production') {
       this.logger.warn(
-        'Upload storage: local disk — on Railway files are lost on redeploy. Set CLOUDINARY_* env vars or attach a volume at /app/uploads.',
+        'Upload storage: local disk — on Railway files are lost on redeploy. Set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME + CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET.',
       );
     }
+  }
+
+  getStorageMode(): 'cloudinary' | 'local' {
+    return this.useCloudinary ? 'cloudinary' : 'local';
   }
 
   async onModuleInit() {

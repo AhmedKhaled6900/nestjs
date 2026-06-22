@@ -140,6 +140,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
+], EnvironmentVariables.prototype, "CLOUDINARY_URL", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
 ], EnvironmentVariables.prototype, "CLOUDINARY_CLOUD_NAME", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
@@ -175,6 +180,6 @@ function validate(config) {
     if (errors.length > 0) {
         throw new Error(errors.toString());
     }
-    return validated;
+    return { ...normalized, ...validated };
 }
 //# sourceMappingURL=env.validation.js.map

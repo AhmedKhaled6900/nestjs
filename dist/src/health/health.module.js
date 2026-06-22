@@ -15,13 +15,17 @@ const common_2 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const prisma_service_1 = require("../prisma/prisma.service");
 const permissions_decorator_1 = require("../auth/decorators/permissions.decorator");
+const upload_module_1 = require("../upload/upload.module");
+const upload_service_1 = require("../upload/upload.service");
 let HealthController = class HealthController {
-    constructor(prisma) {
+    constructor(prisma, uploadService) {
         this.prisma = prisma;
+        this.uploadService = uploadService;
     }
     check() {
         return {
             status: 'ok',
+            uploadStorage: this.uploadService.getStorageMode(),
             timestamp: new Date().toISOString(),
         };
     }
@@ -52,13 +56,15 @@ __decorate([
 exports.HealthController = HealthController = __decorate([
     (0, swagger_1.ApiTags)('Health'),
     (0, common_2.Controller)('health'),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        upload_service_1.UploadService])
 ], HealthController);
 let HealthModule = class HealthModule {
 };
 exports.HealthModule = HealthModule;
 exports.HealthModule = HealthModule = __decorate([
     (0, common_1.Module)({
+        imports: [upload_module_1.UploadModule],
         controllers: [HealthController],
     })
 ], HealthModule);
