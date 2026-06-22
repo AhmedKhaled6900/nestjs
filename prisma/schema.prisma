@@ -274,6 +274,9 @@ enum NotificationType {
   SERVICE_PROVIDER_APPROVED
   SERVICE_PROVIDER_REJECTED
   SERVICE_PROVIDER_SUSPENDED
+  SERVICE_LISTING_SUBMITTED
+  SERVICE_LISTING_APPROVED
+  SERVICE_LISTING_REJECTED
   SERVICE_ORDER_RECEIVED
   SERVICE_ORDER_ACCEPTED
   SERVICE_ORDER_REJECTED
@@ -544,7 +547,9 @@ enum ServiceProviderStatus {
 
 enum ServiceListingStatus {
   DRAFT
+  PENDING_REVIEW
   ACTIVE
+  REJECTED
   PAUSED
 }
 
@@ -682,6 +687,10 @@ model ServiceListing {
   link        String?
   menuItems Json?
   metadata    Json?
+  isFeatured  Boolean              @default(false)
+  rejectionReason String?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
   status      ServiceListingStatus @default(DRAFT)
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
@@ -693,6 +702,7 @@ model ServiceListing {
 
   @@index([providerId, status])
   @@index([categoryId, status])
+  @@index([status, isFeatured])
   @@map("service_listings")
 }
 

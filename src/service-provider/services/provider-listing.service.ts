@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 import {
   Prisma,
@@ -11,6 +12,7 @@ import {
   ServiceProviderStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NOTIFICATION_EVENTS } from '../../notification/events/notification.events';
 import { UploadService } from '../../upload/upload.service';
 import { CreateListingDto, UpdateListingDto } from '../dto/listing.dto';
 import {
@@ -36,6 +38,7 @@ export class ProviderListingService {
     private readonly prisma: PrismaService,
     private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async listMyListings(userId: string) {
@@ -115,8 +118,68 @@ export class ProviderListingService {
     });
 
     return {
-      message: 'Listing created (free listing — publish when ready)',
+      message: 'Listing created as draft — submit for admin review when ready',
       listing: this.mapListing(listing, createEmptyListingOrderStats()),
+    };
+  }
+
+  async submitForReview(userId: string, listingId: string) {
+    const profile = await getProviderProfileOrFail(this.prisma, userId);
+    assertProviderCanManage(profile);
+    assertProviderApproved(profile);
+
+    const listing = await this.findOwnedListingOrFail(profile.id, listingId);
+
+    if (
+      listing.status !== ServiceListingStatus.DRAFT &&
+      listing.status !== ServiceListingStatus.REJECTED &&
+      listing.status !== ServiceListingStatus.PAUSED
+    ) {
+      throw new BadRequestException(
+        'Only draft, rejected, or paused listings can be submitted for review',
+      );
+    }
+
+    if (!listing.image) {
+      throw new BadRequestException('Listing image is required before submission');
+    }
+
+    const updated = await this.prisma.serviceListing.update({
+      where: { id: listing.id },
+      data: {
+        status: ServiceListingStatus.PENDING_REVIEW,
+        rejectionReason: null,
+        submittedAt: new Date(),
+        reviewedAt: null,
+      },
+      include: {
+        provider: {
+          select: {
+            userId: true,
+            businessName: true,
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.SERVICE_LISTING_SUBMITTED, {
+      listingId: updated.id,
+      listingTitle: updated.title,
+      providerId: updated.providerId,
+      providerUserId: updated.provider.userId,
+      businessName: updated.provider.businessName,
+      providerName: updated.provider.user.name,
+    });
+
+    const orderStats =
+      (await this.getListingOrderStats(profile.id, [updated.id])).get(
+        updated.id,
+      ) ?? createEmptyListingOrderStats();
+
+    return {
+      message: 'Listing submitted for admin review',
+      listing: this.mapListing(updated, orderStats),
     };
   }
 
@@ -131,12 +194,13 @@ export class ProviderListingService {
 
     const listing = await this.findOwnedListingOrFail(profile.id, listingId);
 
-    if (dto.status === ServiceListingStatus.ACTIVE) {
-      assertProviderApproved(profile);
-      if (!listing.image && !imageFile) {
-        throw new BadRequestException('Listing image is required before publishing');
-      }
+    if (listing.status === ServiceListingStatus.PENDING_REVIEW) {
+      throw new BadRequestException(
+        'Listing is pending review — wait for admin decision before editing',
+      );
     }
+
+    const statusUpdate = this.resolveProviderStatusUpdate(listing.status, dto.status);
 
     let image = listing.image;
     if (imageFile) {
@@ -164,7 +228,14 @@ export class ProviderListingService {
           ? { menuItems: menuItems as unknown as Prisma.InputJsonValue }
           : {}),
         metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
-        status: dto.status,
+        ...(statusUpdate !== undefined
+          ? {
+              status: statusUpdate,
+              ...(statusUpdate === ServiceListingStatus.PAUSED
+                ? { isFeatured: false }
+                : {}),
+            }
+          : {}),
       },
     });
 
@@ -233,6 +304,10 @@ export class ProviderListingService {
     link: string | null;
     menuItems: unknown;
     metadata: unknown;
+    isFeatured?: boolean;
+    rejectionReason?: string | null;
+    submittedAt?: Date | null;
+    reviewedAt?: Date | null;
     status: ServiceListingStatus;
     createdAt: Date;
     updatedAt: Date;
@@ -251,6 +326,10 @@ export class ProviderListingService {
       menuItems: this.mapListingMenuItems(listing.menuItems),
       orderStats,
       metadata: listing.metadata,
+      isFeatured: listing.isFeatured ?? false,
+      rejectionReason: listing.rejectionReason ?? null,
+      submittedAt: listing.submittedAt ?? null,
+      reviewedAt: listing.reviewedAt ?? null,
       status: listing.status,
       createdAt: listing.createdAt,
       updatedAt: listing.updatedAt,
@@ -275,5 +354,40 @@ export class ProviderListingService {
       .replace(/\/$/, '');
 
     return this.uploadService.toPublicUrl(storedValue, appUrl);
+  }
+
+  private resolveProviderStatusUpdate(
+    currentStatus: ServiceListingStatus,
+    requestedStatus?: ServiceListingStatus,
+  ): ServiceListingStatus | undefined {
+    if (requestedStatus === undefined) {
+      return undefined;
+    }
+
+    if (requestedStatus === ServiceListingStatus.ACTIVE) {
+      throw new BadRequestException(
+        'Use POST /provider/listings/:id/submit to request publication',
+      );
+    }
+
+    if (
+      requestedStatus === ServiceListingStatus.PENDING_REVIEW ||
+      requestedStatus === ServiceListingStatus.REJECTED
+    ) {
+      throw new BadRequestException('Invalid listing status for provider update');
+    }
+
+    if (requestedStatus === ServiceListingStatus.PAUSED) {
+      if (currentStatus !== ServiceListingStatus.ACTIVE) {
+        throw new BadRequestException('Only active listings can be paused');
+      }
+      return ServiceListingStatus.PAUSED;
+    }
+
+    if (requestedStatus === ServiceListingStatus.DRAFT) {
+      throw new BadRequestException('Cannot revert listing to draft via update');
+    }
+
+    throw new BadRequestException('Invalid listing status');
   }
 }

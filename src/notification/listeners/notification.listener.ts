@@ -21,6 +21,9 @@ import {
   ServiceProviderApprovedEvent,
   ServiceProviderRejectedEvent,
   ServiceProviderSuspendedEvent,
+  ServiceListingSubmittedEvent,
+  ServiceListingApprovedEvent,
+  ServiceListingRejectedEvent,
   ServiceOrderReceivedEvent,
   ServiceOrderAcceptedEvent,
   ServiceOrderRejectedEvent,
@@ -48,6 +51,9 @@ import {
   buildServiceProviderApprovedNotification,
   buildServiceProviderRejectedNotification,
   buildServiceProviderSuspendedNotification,
+  buildServiceListingSubmittedNotification,
+  buildServiceListingApprovedNotification,
+  buildServiceListingRejectedNotification,
   buildServiceOrderReceivedNotification,
   buildServiceOrderAcceptedNotification,
   buildServiceOrderRejectedNotification,
@@ -412,6 +418,57 @@ export class NotificationListener {
       body: content.body,
       data: {
         providerUserId: payload.providerUserId,
+        reason: payload.reason,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_LISTING_SUBMITTED, { async: true })
+  async handleServiceListingSubmitted(payload: ServiceListingSubmittedEvent) {
+    const content = buildServiceListingSubmittedNotification(payload);
+
+    await this.notificationService.createForAllAdmins({
+      type: NotificationType.SERVICE_LISTING_SUBMITTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        listingId: payload.listingId,
+        listingTitle: payload.listingTitle,
+        providerId: payload.providerId,
+        providerUserId: payload.providerUserId,
+        businessName: payload.businessName,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_LISTING_APPROVED, { async: true })
+  async handleServiceListingApproved(payload: ServiceListingApprovedEvent) {
+    const content = buildServiceListingApprovedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.providerUserId,
+      type: NotificationType.SERVICE_LISTING_APPROVED,
+      title: content.title,
+      body: content.body,
+      data: {
+        listingId: payload.listingId,
+        listingTitle: payload.listingTitle,
+      },
+    });
+  }
+
+  @OnEvent(NOTIFICATION_EVENTS.SERVICE_LISTING_REJECTED, { async: true })
+  async handleServiceListingRejected(payload: ServiceListingRejectedEvent) {
+    const content = buildServiceListingRejectedNotification(payload);
+
+    await this.notificationService.create({
+      userId: payload.providerUserId,
+      type: NotificationType.SERVICE_LISTING_REJECTED,
+      title: content.title,
+      body: content.body,
+      data: {
+        listingId: payload.listingId,
+        listingTitle: payload.listingTitle,
         reason: payload.reason,
       },
     });

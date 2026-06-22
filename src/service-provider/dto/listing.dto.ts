@@ -124,7 +124,10 @@ export class UpdateListingDto {
   @IsObject()
   metadata?: Record<string, unknown>;
 
-  @ApiPropertyOptional({ enum: ServiceListingStatus })
+  @ApiPropertyOptional({
+    enum: ServiceListingStatus,
+    description: 'Provider may only set PAUSED to unpublish an active listing',
+  })
   @IsOptional()
   @IsEnum(ServiceListingStatus)
   status?: ServiceListingStatus;

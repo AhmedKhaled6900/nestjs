@@ -18,3 +18,5 @@ export class QueryProvidersDto extends PaginationQueryDto {
   @IsString()
   category?: string;
 }
+
+export class QueryFeaturedListingsDto extends PaginationQueryDto {}

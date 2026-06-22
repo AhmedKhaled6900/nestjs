@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../auth/decorators/permissions.decorator';
-import { QueryProvidersDto } from '../dto/discovery.dto';
+import { QueryFeaturedListingsDto, QueryProvidersDto } from '../dto/discovery.dto';
 import { ServiceDiscoveryService } from '../services/service-discovery.service';
 
 @ApiTags('Services (Public)')
@@ -14,6 +14,13 @@ export class ServicesPublicController {
   @ApiOperation({ summary: 'List active service categories' })
   listCategories() {
     return this.discoveryService.listCategories();
+  }
+
+  @Get('listings/featured')
+  @Public()
+  @ApiOperation({ summary: 'Featured listings for homepage banner' })
+  listFeaturedListings(@Query() query: QueryFeaturedListingsDto) {
+    return this.discoveryService.listFeaturedListings(query);
   }
 
   @Get('providers')

@@ -98,9 +98,11 @@ if (role === 'SERVICE_PROVIDER') {
 
 ### ServiceListingStatus
 
-`DRAFT` | `ACTIVE` | `PAUSED`
+`DRAFT` | `PENDING_REVIEW` | `ACTIVE` | `REJECTED` | `PAUSED`
 
-> نشر الإعلان (`ACTIVE`) يتطلب `APPROVED`.
+> البروفايدر ينشئ إعلان `DRAFT` ثم `POST /provider/listings/:id/submit` → `PENDING_REVIEW`.  
+> الأدمن يوافق (`ACTIVE`) أو يرفض (`REJECTED`). لا يمكن للبروفايدر نشر `ACTIVE` مباشرة.  
+> `isFeatured` — الأدمن يفعّلها على إعلان `ACTIVE` للبانر (`GET /services/listings/featured`).
 
 ### ServiceOrderStatus
 
@@ -411,17 +413,38 @@ Permission: `provider.listing.manage`
 - `activeOrdersCount` = طلبات **لسه شغالة** (`PENDING`, `ACCEPTED`, `PREPARING`, `OUT_FOR_DELIVERY`)
 - الطلبات الملغاة/المرفوضة لا تدخل في العدادين
 
-→ يُنشأ بحالة `DRAFT`. عند الطلب عبر `listingId` يُستخدم منيو الإعلان إن وُجد؛ وإلا منيو البروفايل.
+→ يُنشأ بحالة `DRAFT`. استخدم `POST /provider/listings/:id/submit` لطلب النشر من الأدمن.
 
 **منيو البروفايل الثابت** يبقى من `/provider/menu-items` (للطلب المباشر بدون إعلان).
 
+#### POST `/provider/listings/:id/submit`
+
+Permission: `provider.listing.manage` — يرسل الإعلان للأدمن (`PENDING_REVIEW`). يتطلب بروفايدر `APPROVED` + صورة.
+
 #### PATCH `/provider/listings/:id`
 
-**Content-Type:** `multipart/form-data` — نفس الحقول + `image` اختياري + `status` + `menuItems` (يستبدل المنيو بالكامل إن أُرسل)
+**Content-Type:** `multipart/form-data` — نفس الحقول + `image` اختياري + `menuItems` (يستبدل المنيو بالكامل إن أُرسل)
 
-> `status: ACTIVE` يتطلب provider `APPROVED`.
+> البروفايدر يقدر يضبط `status: PAUSED` فقط لإيقاف إعلان نشط. إعادة النشر عبر `submit` ثم موافقة الأدمن.
 
 #### DELETE `/provider/listings/:id`
+
+---
+
+### Admin Listings (مراجعة وتمييز الإعلانات)
+
+Permission: `provider.review`
+
+| Method | Endpoint | الوصف |
+|--------|----------|--------|
+| GET | `/admin/listings` | كل الإعلانات (`?status=&featured=true`) |
+| GET | `/admin/listings/pending` | بانتظار المراجعة |
+| GET | `/admin/listings/:id` | تفاصيل إعلان + بيانات البروفايدر |
+| PATCH | `/admin/listings/:id/approve` | موافقة → `ACTIVE` فوراً |
+| PATCH | `/admin/listings/:id/reject` | رفض + `{ "reason": "..." }` |
+| PATCH | `/admin/listings/:id/featured` | `{ "isFeatured": true }` — للبانر |
+
+**عام (بانر):** `GET /services/listings/featured` — إعلانات `ACTIVE` + `isFeatured: true` مع بيانات البروفايدر.
 
 ---
 

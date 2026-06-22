@@ -17,6 +17,9 @@ import {
   ServiceProviderApprovedEvent,
   ServiceProviderRejectedEvent,
   ServiceProviderSuspendedEvent,
+  ServiceListingSubmittedEvent,
+  ServiceListingApprovedEvent,
+  ServiceListingRejectedEvent,
   ServiceOrderReceivedEvent,
   ServiceOrderAcceptedEvent,
   ServiceOrderRejectedEvent,
@@ -193,6 +196,33 @@ export function buildServiceProviderSuspendedNotification(
   return {
     title: 'تم تعليق حسابك',
     body: `علّق المسؤول حساب مقدم الخدمة. السبب: ${payload.reason}`,
+  };
+}
+
+export function buildServiceListingSubmittedNotification(
+  payload: ServiceListingSubmittedEvent,
+): NotificationContent {
+  return {
+    title: 'إعلان بانتظار المراجعة',
+    body: `أرسل ${payload.providerName} (${payload.businessName}) إعلان «${payload.listingTitle}» للمراجعة`,
+  };
+}
+
+export function buildServiceListingApprovedNotification(
+  payload: ServiceListingApprovedEvent,
+): NotificationContent {
+  return {
+    title: 'تم نشر إعلانك',
+    body: `وافق المسؤول على إعلان «${payload.listingTitle}» وهو الآن ظاهر للعملاء`,
+  };
+}
+
+export function buildServiceListingRejectedNotification(
+  payload: ServiceListingRejectedEvent,
+): NotificationContent {
+  return {
+    title: 'تم رفض إعلانك',
+    body: `رفض المسؤول إعلان «${payload.listingTitle}». السبب: ${payload.reason}`,
   };
 }
 

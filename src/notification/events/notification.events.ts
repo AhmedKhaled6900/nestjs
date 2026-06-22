@@ -19,6 +19,9 @@ export const NOTIFICATION_EVENTS = {
   SERVICE_PROVIDER_APPROVED: 'notification.service_provider.approved',
   SERVICE_PROVIDER_REJECTED: 'notification.service_provider.rejected',
   SERVICE_PROVIDER_SUSPENDED: 'notification.service_provider.suspended',
+  SERVICE_LISTING_SUBMITTED: 'notification.service_listing.submitted',
+  SERVICE_LISTING_APPROVED: 'notification.service_listing.approved',
+  SERVICE_LISTING_REJECTED: 'notification.service_listing.rejected',
   SERVICE_ORDER_RECEIVED: 'notification.service_order.received',
   SERVICE_ORDER_ACCEPTED: 'notification.service_order.accepted',
   SERVICE_ORDER_REJECTED: 'notification.service_order.rejected',
@@ -222,4 +225,27 @@ export type ProviderPromotionActivatedEvent = {
   providerUserId: string;
   promotionId: string;
   type: string;
+};
+
+export type ServiceListingSubmittedEvent = {
+  listingId: string;
+  listingTitle: string;
+  providerId: string;
+  providerUserId: string;
+  businessName: string;
+  providerName: string;
+};
+
+export type ServiceListingApprovedEvent = {
+  providerUserId: string;
+  listingId: string;
+  listingTitle: string;
+  businessName: string;
+};
+
+export type ServiceListingRejectedEvent = {
+  providerUserId: string;
+  listingId: string;
+  listingTitle: string;
+  reason: string;
 };

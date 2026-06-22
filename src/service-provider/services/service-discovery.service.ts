@@ -11,7 +11,7 @@ import {
 } from '../../common/dto/pagination.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UploadService } from '../../upload/upload.service';
-import { QueryProvidersDto } from '../dto/discovery.dto';
+import { QueryFeaturedListingsDto, QueryProvidersDto } from '../dto/discovery.dto';
 import { decimalToNumber } from '../helpers/provider.helpers';
 import { parseListingMenuItemsJson } from '../helpers/listing-menu.helpers';
 
@@ -170,10 +170,65 @@ export class ServiceDiscoveryService {
         deliveryFee: decimalToNumber(listing.deliveryFee),
         image: this.toPublicUrl(listing.image),
         link: listing.link,
+        isFeatured: listing.isFeatured,
         menuItems: parseListingMenuItemsJson(listing.menuItems),
         metadata: listing.metadata,
       })),
     };
+  }
+
+  async listFeaturedListings(query: QueryFeaturedListingsDto) {
+    const { page, limit, skip } = resolvePagination(query.page, query.limit);
+
+    const where = {
+      status: ServiceListingStatus.ACTIVE,
+      isFeatured: true,
+      provider: { status: ServiceProviderStatus.APPROVED },
+    };
+
+    const [listings, total] = await Promise.all([
+      this.prisma.serviceListing.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ updatedAt: 'desc' }],
+        include: {
+          provider: {
+            select: {
+              id: true,
+              businessName: true,
+              logo: true,
+              phone: true,
+              whatsapp: true,
+              category: { select: { id: true, name: true, slug: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.serviceListing.count({ where }),
+    ]);
+
+    const items = listings.map((listing) => ({
+      id: listing.id,
+      title: listing.title,
+      description: listing.description,
+      deliveryFee: decimalToNumber(listing.deliveryFee),
+      image: this.toPublicUrl(listing.image),
+      link: listing.link,
+      isFeatured: true,
+      menuItems: parseListingMenuItemsJson(listing.menuItems),
+      metadata: listing.metadata,
+      provider: {
+        id: listing.provider.id,
+        businessName: listing.provider.businessName,
+        logo: this.toPublicUrl(listing.provider.logo),
+        phone: listing.provider.phone,
+        whatsapp: listing.provider.whatsapp,
+        category: listing.provider.category,
+      },
+    }));
+
+    return buildPaginatedResult(items, total, page, limit);
   }
 
   private async resolveCategoryFilter(category: string) {

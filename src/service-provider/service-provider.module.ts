@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { UploadModule } from '../upload/upload.module';
+import { AdminListingController } from './controllers/admin-listing.controller';
 import { AdminServiceCategoryController } from './controllers/admin-service-category.controller';
 import {
   AdminProviderController,
@@ -25,6 +26,7 @@ import {
 } from './controllers/service-order.controller';
 import { ServicesPublicController } from './controllers/services-public.controller';
 import { PaymobService } from './payment/paymob.service';
+import { AdminListingService } from './services/admin-listing.service';
 import { AdminProviderService } from './services/admin-provider.service';
 import { AdminServiceCategoryService } from './services/admin-service-category.service';
 import { ProviderCoverageService } from './services/provider-coverage.service';
@@ -42,6 +44,7 @@ import { ServiceOrderService } from './services/service-order.service';
   controllers: [
     ProviderProfileController,
     AdminProviderController,
+    AdminListingController,
     ProviderCoverageController,
     ProviderListingController,
     ProviderMenuController,
@@ -68,6 +71,7 @@ import { ServiceOrderService } from './services/service-order.service';
     ServiceDiscoveryService,
     AdminServiceCategoryService,
     AdminProviderService,
+    AdminListingService,
     ProviderPromotionService,
     PaymobService,
   ],

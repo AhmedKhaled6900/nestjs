@@ -77,6 +77,15 @@ export class ProviderListingController {
     return this.listingService.updateListing(user.id, id, dto, image);
   }
 
+  @Post(':id/submit')
+  @RequirePermissions('provider.listing.manage')
+  @ApiOperation({
+    summary: 'Submit listing for admin review (publishes after approval)',
+  })
+  submit(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.listingService.submitForReview(user.id, id);
+  }
+
   @Delete(':id')
   @RequirePermissions('provider.listing.manage')
   @ApiOperation({ summary: 'Delete service listing' })
