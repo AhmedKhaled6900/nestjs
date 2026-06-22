@@ -83,6 +83,16 @@ export class CreateServiceOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    example: '01012345678',
+    description:
+      'Contact phone for this order. Saved to the customer profile if not set yet.',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  customerPhone?: string;
 }
 
 export class UpdateServiceOrderStatusDto {

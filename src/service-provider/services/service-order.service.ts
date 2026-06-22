@@ -122,6 +122,20 @@ export class ServiceOrderService {
       select: { id: true, name: true, phone: true },
     });
 
+    const contactPhone = dto.customerPhone?.trim();
+    if (contactPhone && !customer.phone) {
+      try {
+        const updated = await this.prisma.user.update({
+          where: { id: customerId },
+          data: { phone: contactPhone },
+          select: { id: true, name: true, phone: true },
+        });
+        customer.phone = updated.phone;
+      } catch {
+        // Another account may already use this phone — order still proceeds.
+      }
+    }
+
     const order = await this.prisma.serviceOrder.create({
       data: {
         customerId,
