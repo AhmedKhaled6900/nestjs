@@ -87,7 +87,9 @@ export class ProviderListingService {
     assertProviderCanManage(profile);
 
     if (!imageFile) {
-      throw new BadRequestException('Listing image is required');
+      throw new BadRequestException(
+        'Listing image is required. Send multipart/form-data with an image file in the image field (not JSON body).',
+      );
     }
 
     const image = await this.uploadService.saveServiceListingImage(

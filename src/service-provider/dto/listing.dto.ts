@@ -14,6 +14,7 @@ import {
   IsUUID,
   Min,
   ValidateNested,
+  Allow,
 } from 'class-validator';
 
 function optionalNumber() {
@@ -22,6 +23,25 @@ function optionalNumber() {
       return undefined;
     }
     return Number(value);
+  });
+}
+
+function requiredNumber() {
+  return Transform(({ value }) => {
+    if (value === '' || value === undefined || value === null) {
+      return value;
+    }
+    return Number(value);
+  });
+}
+
+function requiredInt() {
+  return Transform(({ value }) => {
+    if (value === '' || value === undefined || value === null) {
+      return value;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.trunc(parsed) : value;
   });
 }
 
@@ -34,6 +54,40 @@ function parseJsonArray(value: unknown) {
     }
   }
   return value;
+}
+
+function parseMenuItems(value: unknown) {
+  const parsed = parseJsonArray(value);
+  if (!Array.isArray(parsed)) {
+    return parsed;
+  }
+
+  return parsed.map((item) => {
+    if (!item || typeof item !== 'object') {
+      return item;
+    }
+
+    const record = item as Record<string, unknown>;
+    return {
+      ...record,
+      price:
+        record.price === '' || record.price === undefined || record.price === null
+          ? record.price
+          : Number(record.price),
+      prepTimeMinutes:
+        record.prepTimeMinutes === '' ||
+        record.prepTimeMinutes === undefined ||
+        record.prepTimeMinutes === null
+          ? record.prepTimeMinutes
+          : Math.trunc(Number(record.prepTimeMinutes)),
+      sortOrder:
+        record.sortOrder === '' ||
+        record.sortOrder === undefined ||
+        record.sortOrder === null
+          ? record.sortOrder
+          : Math.trunc(Number(record.sortOrder)),
+    };
+  });
 }
 
 export class ListingMenuItemInputDto {
@@ -50,17 +104,20 @@ export class ListingMenuItemInputDto {
   name!: string;
 
   @ApiProperty({ example: 40 })
+  @requiredNumber()
   @IsNumber()
   @Min(0)
   price!: number;
 
   @ApiProperty({ example: 10, description: 'Preparation time in minutes' })
+  @requiredInt()
   @IsInt()
   @Min(1)
   prepTimeMinutes!: number;
 
   @ApiPropertyOptional({ example: 0 })
   @IsOptional()
+  @requiredInt()
   @IsInt()
   @Min(0)
   sortOrder?: number;
@@ -120,11 +177,16 @@ export class CreateListingDto {
     example: [{ name: 'بطاطا بالعسل', price: 40, prepTimeMinutes: 10 }],
   })
   @IsOptional()
-  @Transform(({ value }) => parseJsonArray(value))
+  @Transform(({ value }) => parseMenuItems(value))
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ListingMenuItemInputDto)
   menuItems?: ListingMenuItemInputDto[];
+
+  /** Ignored on JSON body — file must be sent as multipart field `image` */
+  @Allow()
+  @IsOptional()
+  image?: unknown;
 }
 
 export class UpdateListingDto {
@@ -178,11 +240,16 @@ export class UpdateListingDto {
       'Replace listing menu. In multipart send as JSON string. Omit to keep current menu.',
   })
   @IsOptional()
-  @Transform(({ value }) => parseJsonArray(value))
+  @Transform(({ value }) => parseMenuItems(value))
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ListingMenuItemInputDto)
   menuItems?: ListingMenuItemInputDto[];
+
+  /** Ignored on JSON body — file must be sent as multipart field `image` */
+  @Allow()
+  @IsOptional()
+  image?: unknown;
 }
 
 export class CreateListingMultipartDto extends CreateListingDto {
