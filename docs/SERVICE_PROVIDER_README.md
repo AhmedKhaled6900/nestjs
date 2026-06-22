@@ -352,7 +352,7 @@ Permission: `provider.profile.update`
 
 ---
 
-### Listings (إعلان مجاني — منفصل عن المنيو)
+### Listings (إعلان مجاني — مع منيو خاص بالإعلان)
 
 #### GET `/provider/listings`
 
@@ -369,12 +369,55 @@ Permission: `provider.listing.manage`
 | `deliveryFee` | number | no |
 | `link` | URL string | no |
 | `metadata` | JSON string | no |
+| `menuItems` | JSON string (array) | no |
 
-→ يُنشأ بحالة `DRAFT`. **المنيو الثابت** يُدار من `/provider/menu-items` وليس من الإعلان.
+**`menuItems`** — منيو خاص بهذا الإعلان (اسم، سعر، مدة التحضير):
+
+```json
+[
+  { "name": "بطاطا بالعسل", "price": 40, "prepTimeMinutes": 10 },
+  { "name": "بطاطا بالسكر", "price": 30, "prepTimeMinutes": 10, "sortOrder": 1 }
+]
+```
+
+في `multipart/form-data` أرسل الحقل كنص JSON (مثل `metadata`).
+
+**Response — `listing.menuItems`:**
+
+```json
+[
+  {
+    "id": "uuid",
+    "name": "بطاطا بالعسل",
+    "price": 40,
+    "prepTimeMinutes": 10,
+    "sortOrder": 0
+  }
+]
+```
+
+**Response — `listing.orderStats` (في GET و POST و PATCH):**
+
+```json
+{
+  "orderStats": {
+    "completedOrdersCount": 5,
+    "activeOrdersCount": 2
+  }
+}
+```
+
+- `completedOrdersCount` = طلبات **مكتملة** (`DELIVERED`)
+- `activeOrdersCount` = طلبات **لسه شغالة** (`PENDING`, `ACCEPTED`, `PREPARING`, `OUT_FOR_DELIVERY`)
+- الطلبات الملغاة/المرفوضة لا تدخل في العدادين
+
+→ يُنشأ بحالة `DRAFT`. عند الطلب عبر `listingId` يُستخدم منيو الإعلان إن وُجد؛ وإلا منيو البروفايل.
+
+**منيو البروفايل الثابت** يبقى من `/provider/menu-items` (للطلب المباشر بدون إعلان).
 
 #### PATCH `/provider/listings/:id`
 
-**Content-Type:** `multipart/form-data` — نفس الحقول + `image` اختياري + `status`
+**Content-Type:** `multipart/form-data` — نفس الحقول + `image` اختياري + `status` + `menuItems` (يستبدل المنيو بالكامل إن أُرسل)
 
 > `status: ACTIVE` يتطلب provider `APPROVED`.
 
@@ -423,7 +466,30 @@ Permission: `provider.menu.manage` — كل أصناف المنيو (نشطة و
 
 Permission: `provider.order.read`
 
-**Response:** paginated — كل order يتضمن `items`, `customer`, `listing`, `subtotal`, `deliveryFee`, `platformFee`, `providerNet`.
+**Response:** paginated — كل order يتضمن:
+
+| Field | الوصف |
+|-------|--------|
+| `orderSource` | `LISTING` = من إعلان — `PROFILE_MENU` = من المنيو الرئيسي |
+| `sourceLabel` | نص جاهز للعرض (عنوان الإعلان أو «منيو البروفايل الرئيسي») |
+| `listingId` | uuid الإعلان أو `null` للمنيو الرئيسي |
+| `listing` | `{ id, title }` للإعلان فقط — `null` للمنيو الرئيسي |
+| `items`, `customer`, `subtotal`, `deliveryFee`, `platformFee`, `providerNet` | كالسابق |
+
+```json
+{
+  "id": "order-uuid",
+  "orderSource": "LISTING",
+  "sourceLabel": "عرض الصيف",
+  "listingId": "listing-uuid",
+  "listing": { "id": "listing-uuid", "title": "عرض الصيف" },
+  "status": "PENDING",
+  "customer": { "id": "...", "name": "...", "phone": "..." },
+  "items": []
+}
+```
+
+**إشعار FCM للبروفايدر** (`SERVICE_ORDER_RECEIVED`) يتضمن `orderSource` و `listingId` في `data`.
 
 #### PATCH `/provider/orders/:id/accept`
 

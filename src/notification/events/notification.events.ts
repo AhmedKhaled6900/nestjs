@@ -176,6 +176,8 @@ export type ServiceOrderReceivedEvent = {
   customerId: string;
   customerName: string;
   orderId: string;
+  orderSource: 'LISTING' | 'PROFILE_MENU';
+  listingId: string | null;
   listingTitle: string;
   subtotal: number;
 };

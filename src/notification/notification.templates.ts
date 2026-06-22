@@ -199,9 +199,14 @@ export function buildServiceProviderSuspendedNotification(
 export function buildServiceOrderReceivedNotification(
   payload: ServiceOrderReceivedEvent,
 ): NotificationContent {
+  const sourceText =
+    payload.orderSource === 'LISTING'
+      ? `من إعلان «${payload.listingTitle}»`
+      : 'من المنيو الرئيسي';
+
   return {
     title: 'طلب جديد',
-    body: `طلب جديد من ${payload.customerName} — «${payload.listingTitle}» (${payload.subtotal})`,
+    body: `طلب جديد ${sourceText} — ${payload.customerName} (${payload.subtotal})`,
   };
 }
 

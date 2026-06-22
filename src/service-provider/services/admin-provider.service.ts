@@ -8,6 +8,8 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueryAdminProvidersDto } from '../dto/admin-provider.dto';
 import { decimalToNumber } from '../helpers/provider.helpers';
+import { parseListingMenuItemsJson } from '../helpers/listing-menu.helpers';
+import { buildOrderSourceMeta } from '../helpers/order.helpers';
 
 const adminProviderInclude = {
   user: {
@@ -161,6 +163,7 @@ export class AdminProviderService {
         deliveryFee: decimalToNumber(listing.deliveryFee),
         image: this.toPublicUrl(listing.image),
         link: listing.link,
+        menuItems: parseListingMenuItemsJson(listing.menuItems),
         metadata: listing.metadata,
         status: listing.status,
         createdAt: listing.createdAt,
@@ -217,11 +220,15 @@ export class AdminProviderService {
   }
 
   private mapOrder(order: AdminProviderRecord['orders'][number]) {
+    const source = buildOrderSourceMeta(order.listingId, order.listing);
+
     return {
       id: order.id,
       customerId: order.customerId,
       providerId: order.providerId,
       listingId: order.listingId,
+      orderSource: source.orderSource,
+      sourceLabel: source.sourceLabel,
       status: order.status,
       subtotal: decimalToNumber(order.subtotal),
       deliveryFee: decimalToNumber(order.deliveryFee),
@@ -240,7 +247,7 @@ export class AdminProviderService {
         prepTimeMinutes: item.prepTimeMinutes,
         notes: item.notes,
       })),
-      listing: order.listing,
+      listing: source.listing,
       customer: order.customer,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,

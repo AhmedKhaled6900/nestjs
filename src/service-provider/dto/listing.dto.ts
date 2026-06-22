@@ -1,15 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ServiceListingStatus } from '@prisma/client';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
   IsUrl,
+  IsUUID,
   Min,
+  ValidateNested,
 } from 'class-validator';
 
 function optionalNumber() {
@@ -19,6 +23,47 @@ function optionalNumber() {
     }
     return Number(value);
   });
+}
+
+function parseJsonArray(value: unknown) {
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      return JSON.parse(value) as unknown;
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
+export class ListingMenuItemInputDto {
+  @ApiPropertyOptional({
+    description: 'Existing item id when updating listing menu (omit for new items)',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
+  @ApiProperty({ example: 'بطاطا بالعسل' })
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @ApiProperty({ example: 40 })
+  @IsNumber()
+  @Min(0)
+  price!: number;
+
+  @ApiProperty({ example: 10, description: 'Preparation time in minutes' })
+  @IsInt()
+  @Min(1)
+  prepTimeMinutes!: number;
+
+  @ApiPropertyOptional({ example: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
 }
 
 export class CreateListingDto {
@@ -67,6 +112,19 @@ export class CreateListingDto {
   })
   @IsObject()
   metadata?: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    type: [ListingMenuItemInputDto],
+    description:
+      'Menu for this listing/ad. In multipart send as JSON string, e.g. [{"name":"بطاطا","price":40,"prepTimeMinutes":10}]',
+    example: [{ name: 'بطاطا بالعسل', price: 40, prepTimeMinutes: 10 }],
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseJsonArray(value))
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ListingMenuItemInputDto)
+  menuItems?: ListingMenuItemInputDto[];
 }
 
 export class UpdateListingDto {
@@ -113,6 +171,18 @@ export class UpdateListingDto {
   @IsOptional()
   @IsEnum(ServiceListingStatus)
   status?: ServiceListingStatus;
+
+  @ApiPropertyOptional({
+    type: [ListingMenuItemInputDto],
+    description:
+      'Replace listing menu. In multipart send as JSON string. Omit to keep current menu.',
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseJsonArray(value))
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ListingMenuItemInputDto)
+  menuItems?: ListingMenuItemInputDto[];
 }
 
 export class CreateListingMultipartDto extends CreateListingDto {

@@ -430,6 +430,8 @@ export class NotificationListener {
         orderId: payload.orderId,
         customerId: payload.customerId,
         providerId: payload.providerId,
+        orderSource: payload.orderSource,
+        listingId: payload.listingId,
         listingTitle: payload.listingTitle,
         subtotal: payload.subtotal,
       },

@@ -13,6 +13,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UploadService } from '../../upload/upload.service';
 import { QueryProvidersDto } from '../dto/discovery.dto';
 import { decimalToNumber } from '../helpers/provider.helpers';
+import { parseListingMenuItemsJson } from '../helpers/listing-menu.helpers';
 
 @Injectable()
 export class ServiceDiscoveryService {
@@ -169,6 +170,7 @@ export class ServiceDiscoveryService {
         deliveryFee: decimalToNumber(listing.deliveryFee),
         image: this.toPublicUrl(listing.image),
         link: listing.link,
+        menuItems: parseListingMenuItemsJson(listing.menuItems),
         metadata: listing.metadata,
       })),
     };

@@ -16,7 +16,10 @@ import {
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 export class OrderMenuItemDto {
-  @ApiPropertyOptional({ description: 'Profile menu item id (preferred)' })
+  @ApiPropertyOptional({
+    description:
+      'Menu item id. For profile orders: profile menu item id. For listing orders: id from listing.menuItems[]',
+  })
   @ValidateIf((item: OrderMenuItemDto) => !item.name)
   @IsUUID()
   menuItemId?: string;

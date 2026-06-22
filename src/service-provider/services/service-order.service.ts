@@ -25,6 +25,11 @@ import {
   parseDateRange,
   resolveOrderDeliveryFee,
 } from '../helpers/provider.helpers';
+import {
+  parseListingMenuItemsJson,
+  resolveListingOrderItems,
+} from '../helpers/listing-menu.helpers';
+import { buildOrderSourceMeta } from '../helpers/order.helpers';
 import { ProviderMenuService } from './provider-menu.service';
 
 const PROVIDER_STATUS_FLOW: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
@@ -60,7 +65,12 @@ export class ServiceOrderService {
       throw new NotFoundException('Approved provider not found');
     }
 
-    let listing: { id: string; title: string; deliveryFee: Prisma.Decimal } | null = null;
+    let listing: {
+      id: string;
+      title: string;
+      deliveryFee: Prisma.Decimal;
+      menuItems: unknown;
+    } | null = null;
     if (dto.listingId) {
       const foundListing = await this.prisma.serviceListing.findFirst({
         where: {
@@ -68,7 +78,7 @@ export class ServiceOrderService {
           providerId: provider.id,
           status: 'ACTIVE',
         },
-        select: { id: true, title: true, deliveryFee: true },
+        select: { id: true, title: true, deliveryFee: true, menuItems: true },
       });
 
       if (!foundListing) {
@@ -80,10 +90,17 @@ export class ServiceOrderService {
 
     await this.assertCoverage(provider.id, dto.deliveryCity, dto.deliveryArea);
 
-    const resolvedItems = await this.providerMenuService.resolveOrderItems(
-      provider.id,
-      dto.items,
-    );
+    const listingMenuItems = listing
+      ? parseListingMenuItemsJson(listing.menuItems)
+      : [];
+
+    const resolvedItems =
+      listing && listingMenuItems.length > 0
+        ? resolveListingOrderItems(listingMenuItems, dto.items)
+        : await this.providerMenuService.resolveOrderItems(
+            provider.id,
+            dto.items,
+          );
 
     const subtotal = resolvedItems.reduce(
       (sum, item) => sum + decimalToNumber(item.unitPrice) * item.quantity,
@@ -120,7 +137,7 @@ export class ServiceOrderService {
         notes: dto.notes,
         items: {
           create: resolvedItems.map((item) => ({
-            menuItemId: item.menuItemId,
+            menuItemId: item.menuItemId ?? undefined,
             name: item.name,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
@@ -145,6 +162,8 @@ export class ServiceOrderService {
       customerId: customer.id,
       customerName: customer.name,
       orderId: order.id,
+      orderSource: listing ? 'LISTING' : 'PROFILE_MENU',
+      listingId: listing?.id ?? null,
       listingTitle: listing?.title ?? provider.businessName,
       subtotal,
     });
@@ -388,11 +407,15 @@ export class ServiceOrderService {
     provider?: { id: string; businessName: string; userId?: string };
     customer?: { id: string; name: string; phone?: string | null };
   }) {
+    const source = buildOrderSourceMeta(order.listingId, order.listing);
+
     return {
       id: order.id,
       customerId: order.customerId,
       providerId: order.providerId,
       listingId: order.listingId,
+      orderSource: source.orderSource,
+      sourceLabel: source.sourceLabel,
       status: order.status,
       subtotal: decimalToNumber(order.subtotal),
       deliveryFee: decimalToNumber(order.deliveryFee),
@@ -411,7 +434,7 @@ export class ServiceOrderService {
         prepTimeMinutes: item.prepTimeMinutes,
         notes: item.notes,
       })),
-      listing: order.listing,
+      listing: source.listing,
       provider: order.provider,
       customer: order.customer,
       createdAt: order.createdAt,

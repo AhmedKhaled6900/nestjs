@@ -19,6 +19,16 @@ import {
   decimalToNumber,
   getProviderProfileOrFail,
 } from '../helpers/provider.helpers';
+import {
+  ListingMenuItem,
+  normalizeListingMenuItemsInput,
+  parseListingMenuItemsJson,
+} from '../helpers/listing-menu.helpers';
+import {
+  aggregateListingOrderStats,
+  createEmptyListingOrderStats,
+  ListingOrderStats,
+} from '../helpers/order.helpers';
 
 @Injectable()
 export class ProviderListingService {
@@ -36,7 +46,36 @@ export class ProviderListingService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return { items: listings.map((l) => this.mapListing(l)) };
+    const orderStatsByListing = await this.getListingOrderStats(
+      profile.id,
+      listings.map((listing) => listing.id),
+    );
+
+    return {
+      items: listings.map((listing) =>
+        this.mapListing(
+          listing,
+          orderStatsByListing.get(listing.id) ?? createEmptyListingOrderStats(),
+        ),
+      ),
+    };
+  }
+
+  private async getListingOrderStats(providerId: string, listingIds: string[]) {
+    if (!listingIds.length) {
+      return new Map<string, ListingOrderStats>();
+    }
+
+    const rows = await this.prisma.serviceOrder.groupBy({
+      by: ['listingId', 'status'],
+      where: {
+        providerId,
+        listingId: { in: listingIds },
+      },
+      _count: { id: true },
+    });
+
+    return aggregateListingOrderStats(rows);
   }
 
   async createListing(
@@ -56,6 +95,8 @@ export class ProviderListingService {
       profile.id,
     );
 
+    const menuItems = normalizeListingMenuItemsInput(dto.menuItems) ?? [];
+
     const listing = await this.prisma.serviceListing.create({
       data: {
         providerId: profile.id,
@@ -65,6 +106,7 @@ export class ProviderListingService {
         deliveryFee: dto.deliveryFee ?? 0,
         image,
         link: dto.link,
+        menuItems: menuItems as unknown as Prisma.InputJsonValue,
         metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
         status: ServiceListingStatus.DRAFT,
       },
@@ -72,7 +114,7 @@ export class ProviderListingService {
 
     return {
       message: 'Listing created (free listing — publish when ready)',
-      listing: this.mapListing(listing),
+      listing: this.mapListing(listing, createEmptyListingOrderStats()),
     };
   }
 
@@ -103,6 +145,11 @@ export class ProviderListingService {
       );
     }
 
+    const menuItems =
+      dto.menuItems === undefined
+        ? undefined
+        : normalizeListingMenuItemsInput(dto.menuItems) ?? [];
+
     const updated = await this.prisma.serviceListing.update({
       where: { id: listing.id },
       data: {
@@ -111,14 +158,22 @@ export class ProviderListingService {
         deliveryFee: dto.deliveryFee,
         image,
         link: dto.link,
+        ...(menuItems !== undefined
+          ? { menuItems: menuItems as unknown as Prisma.InputJsonValue }
+          : {}),
         metadata: (dto.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
         status: dto.status,
       },
     });
 
+    const orderStats =
+      (await this.getListingOrderStats(profile.id, [updated.id])).get(
+        updated.id,
+      ) ?? createEmptyListingOrderStats();
+
     return {
       message: 'Listing updated',
-      listing: this.mapListing(updated),
+      listing: this.mapListing(updated, orderStats),
     };
   }
 
@@ -164,7 +219,8 @@ export class ProviderListingService {
     return listing;
   }
 
-  mapListing(listing: {
+  mapListing(
+    listing: {
     id: string;
     providerId: string;
     categoryId: string;
@@ -173,11 +229,14 @@ export class ProviderListingService {
     deliveryFee: { toNumber?: () => number } | number;
     image: string | null;
     link: string | null;
+    menuItems: unknown;
     metadata: unknown;
     status: ServiceListingStatus;
     createdAt: Date;
     updatedAt: Date;
-  }) {
+  },
+    orderStats: ListingOrderStats = createEmptyListingOrderStats(),
+  ) {
     return {
       id: listing.id,
       providerId: listing.providerId,
@@ -187,11 +246,21 @@ export class ProviderListingService {
       deliveryFee: decimalToNumber(listing.deliveryFee),
       image: this.toPublicUrl(listing.image),
       link: listing.link,
+      menuItems: this.mapListingMenuItems(listing.menuItems),
+      orderStats,
       metadata: listing.metadata,
       status: listing.status,
       createdAt: listing.createdAt,
       updatedAt: listing.updatedAt,
     };
+  }
+
+  mapListingMenuItems(value: unknown): ListingMenuItem[] {
+    if (value === null || value === undefined) {
+      return [];
+    }
+
+    return parseListingMenuItemsJson(value);
   }
 
   private toPublicUrl(storedValue: string | null): string | null {
