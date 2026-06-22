@@ -10,7 +10,7 @@ export const DEMO_AREAS = {
   agami: 'العجمي',
   montaza: 'المنتزه',
   marsaMatruh: 'مرسى مطروح',
-  marina: 'مارينا',
+  marina: 'ما رينا',
 } as const;
 
 export const PLACEHOLDER_IMAGE = (seed: string) =>
